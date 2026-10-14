@@ -1,46 +1,83 @@
 # STAC Patterns
 
-Production-tested STAC patterns for geospatial data discovery.
+[![CI](https://github.com/ZQM-Computing/stac-patterns/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Computing/stac-patterns/actions/workflows/ci.yml)
+
+Production-tested STAC patterns for geospatial data discovery — building catalogs, validating items, running search APIs, and wiring STAC metadata into DuckDB analytics and COG serving pipelines.
 
 ## Who this is for
 
-Earth observation engineers, satellite imagery analysts, and geospatial data engineers.
+Earth observation engineers, satellite imagery analysts, and geospatial data engineers. STAC (SpatioTemporal Asset Catalog) is how modern imagery archives describe themselves; these patterns cover the full lifecycle from catalog creation to API serving.
 
-## What's inside
+## Prerequisites
 
-- `examples/` — Runnable scripts with sample data
-- `tests/` — Validation tests for each pattern
+- Python 3.11+
+- `pystac >= 1.9` for catalog building; `rasterio >= 1.3` for raster examples; `stac-fastapi` for the search/server examples
+
+```bash
+pip install pystac rasterio
+```
+
+## Quickstart
+
+```bash
+# Build and validate a catalog — self-contained, synthetic data
+python examples/01-catalog-creation/run.py
+python examples/02-item-validation/run.py
+
+# Serve it as a STAC API (from the example header)
+uvicorn examples/10-stac-api-server/run:app --reload
+```
 
 ## Patterns
 
-| # | Pattern | Description |
-|---|---------|-------------|
-| 1 | Catalog creation | Build STAC catalogs with pystac |
-| 2 | Item validation | Validate STAC items against spec |
-| 3 | Search API | STAC API with stac-fastapi |
-| 4 | Rasterio integration | Read/write raster data |
-| 5 | Cloud deployment | Deploy to S3/GCS |
-| 6 | Full workflow | End-to-end catalog pipeline |
-| 7 | STAC + DuckDB | Analytics on STAC metadata |
-| 8 | STAC + COG pipeline | Catalog + serve rasters |
-| 9 | STAC validation | JSON Schema validation |
-| 10 | STAC API server | FastAPI STAC server |
-| 11 | Bulk operations | Bulk create/update/export |
-| 12 | STAC for games | STAC for game asset management |
+| # | Example | What it demonstrates |
+|---|---------|----------------------|
+| 01 | `01-catalog-creation` | Building a STAC catalog, collections, and items with pystac |
+| 02 | `02-item-validation` | Validating STAC items against the spec |
+| 03 | `03-search-api` | STAC search API server-side setup with stac-fastapi |
+| 04 | `04-rasterio-integration` | Reading raster data behind STAC assets with rasterio |
+| 05 | `05-cloud-deployment` | Publishing a catalog for S3/GCS-hosted assets |
+| 06 | `06-full-workflow` | End-to-end catalog pipeline: create → validate → publish |
+| 07 | `07-stac-duckdb` | Querying STAC metadata catalogs with DuckDB |
+| 08 | `08-stac-cog-pipeline` | Catalog + serve: STAC items pointing at Cloud Optimized GeoTIFFs |
+| 09 | `09-stac-validation` | JSON Schema validation of STAC documents |
+| 10 | `10-stac-api-server` | Full STAC API server with FastAPI (`uvicorn ... --reload`) |
+| 11 | `11-bulk-operations` | Bulk create, update, and export of items |
+| 12 | `12-stac-games` | Cataloging non-EO assets with STAC (worked example: game assets) |
 
-## Requirements
+## Repository layout
 
-- Python 3.11+
-- pystac >= 1.9
-- rasterio >= 1.3
-- stac-fastapi >= 0.7
+```
+stac-patterns/
+├── examples/
+│   ├── 01-catalog-creation/run.py
+│   └── ... (one run.py per pattern, 12 total)
+├── tests/
+│   └── test_patterns.py     # py_compile syntax checks for every example
+├── pyproject.toml
+├── README.md
+├── LICENSE
+└── CONTRIBUTING.md
+```
 
-## Quick start
+## Validation
 
 ```bash
-pip install -e .
-pytest
+pip install pytest
+pytest            # verifies every example compiles
 ```
+
+CI runs `ruff check` / `ruff format --check` and the pytest suite on every push and pull request.
+
+## Roadmap
+
+- STAC API client patterns (`pystac-client` queries, pagination)
+- Collection-level summaries and range summaries
+- Webhook/event-driven catalog updates
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues to zqmcomputing@gmail.com — please do not open a public issue for those.
 
 ## More from this series
 
@@ -75,3 +112,8 @@ MIT — see LICENSE file.
 
 *Part of [ZQM Labs](https://github.com/ZQM-Computing) — games, gear & a little mischief.*
 
+*Part of [ZQM Computing](https://github.com/ZQM-Computing) — games, gear & a little mischief.*
+
+## License
+
+MIT — see [LICENSE](LICENSE).
