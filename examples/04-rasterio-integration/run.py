@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
 """Example 04: Read raster data with rasterio for STAC items."""
+
+import numpy as np
 import rasterio
 from rasterio.transform import from_bounds
-import numpy as np
 
 # Create a synthetic raster (10x10 pixels)
 width, height = 10, 10
@@ -14,9 +14,15 @@ transform = from_bounds(west, south, east, north, width, height)
 
 # Write to GeoTIFF
 with rasterio.open(
-    "output/demo_raster.tif", "w",
-    driver="GTiff", height=height, width=width, count=1,
-    dtype=data.dtype, crs="EPSG:4326", transform=transform
+    "output/demo_raster.tif",
+    "w",
+    driver="GTiff",
+    height=height,
+    width=width,
+    count=1,
+    dtype=data.dtype,
+    crs="EPSG:4326",
+    transform=transform,
 ) as dst:
     dst.write(data)
 

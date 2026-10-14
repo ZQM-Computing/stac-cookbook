@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
 """Example 12: STAC for game asset management (ZQM Labs angle)."""
-from pystac import Catalog, Collection, Item, Extent, SpatialExtent, TemporalExtent
+
 from datetime import datetime
-import json
+
+from pystac import Catalog, Collection, Extent, Item, SpatialExtent, TemporalExtent
 
 # Create a STAC catalog for game assets
 print("=== STAC for Game Asset Management ===")
@@ -10,21 +10,14 @@ print("Use case: Track game locations, assets, and content packs")
 print()
 
 # Catalog for ZQM Labs games
-catalog = Catalog(
-    id="zqm-labs-game-assets",
-    description="ZQM Labs game asset catalog"
-)
+catalog = Catalog(id="zqm-labs-game-assets", description="ZQM Labs game asset catalog")
 
 # Collection: game locations
 location_extent = Extent(
     spatial=SpatialExtent(bboxes=[[-80.95, 28.95, -80.90, 29.05]]),
-    temporal=TemporalExtent(intervals=[[datetime(2026, 1, 1), None]])
+    temporal=TemporalExtent(intervals=[[datetime(2026, 1, 1), None]]),
 )
-locations = Collection(
-    id="game-locations",
-    description="Game locations and checkpoints",
-    extent=location_extent
-)
+locations = Collection(id="game-locations", description="Game locations and checkpoints", extent=location_extent)
 
 # Add game locations as STAC items
 game_stops = [
@@ -46,8 +39,8 @@ for stop in game_stops:
             "name": stop["name"],
             "scare_level": stop["scare"],
             "game": "wisp-lost-lanterns",
-            "asset_type": "game_stop"
-        }
+            "asset_type": "game_stop",
+        },
     )
     locations.add_item(item)
 
@@ -56,13 +49,9 @@ catalog.add_child(locations)
 # Collection: content packs
 content_extent = Extent(
     spatial=SpatialExtent(bboxes=[[-80.95, 28.95, -80.90, 29.05]]),
-    temporal=TemporalExtent(intervals=[[datetime(2026, 1, 1), None]])
+    temporal=TemporalExtent(intervals=[[datetime(2026, 1, 1), None]]),
 )
-content = Collection(
-    id="content-packs",
-    description="Game content packs and assets",
-    extent=content_extent
-)
+content = Collection(id="content-packs", description="Game content packs and assets", extent=content_extent)
 
 # Add content pack items
 content_packs = [
@@ -82,8 +71,8 @@ for pack in content_packs:
             "scare_level": pack["scare"],
             "asset_count": pack["assets"],
             "game": "wisp-lost-lanterns",
-            "asset_type": "content_pack"
-        }
+            "asset_type": "content_pack",
+        },
     )
     content.add_item(item)
 

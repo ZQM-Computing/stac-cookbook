@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
 """Example 09: STAC validation with JSON Schema."""
-import json
-from pathlib import Path
-from pystac import Item
-from pystac.validation import validate_dict
+
 from datetime import datetime
+
+from pystac import Item
+from pystac.errors import STACValidationError
+from pystac.validation import validate_dict
 
 # Load STAC JSON Schema
 # In production, download from https://github.com/radiantearth/stac-spec
@@ -16,14 +16,14 @@ valid_item = Item(
     geometry={"type": "Point", "coordinates": [-80.93, 29.02]},
     bbox=[-80.93, 29.02, -80.93, 29.02],
     datetime=datetime(2026, 1, 15),
-    properties={"platform": "demo"}
+    properties={"platform": "demo"},
 )
 
 # Validate
 try:
     validate_dict(valid_item.to_dict(), "Item")
     print("Valid item: PASSED")
-except Exception as e:
+except STACValidationError as e:
     print(f"Valid item: FAILED - {e}")
 
 # Create an invalid item (missing required field)
@@ -38,7 +38,7 @@ invalid_dict = {
 try:
     validate_dict(invalid_dict, "Item")
     print("Invalid item: PASSED (unexpected)")
-except Exception as e:
+except STACValidationError as e:
     print(f"Invalid item: FAILED (expected) - {type(e).__name__}")
 
 # Custom validation rules

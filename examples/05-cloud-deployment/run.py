@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
 """Example 05: Deploy STAC catalog to S3."""
-import boto3
-import json
-from pathlib import Path
+
 from pystac import Catalog
 
 # Create catalog

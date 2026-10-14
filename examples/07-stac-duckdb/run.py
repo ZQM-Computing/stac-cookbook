@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
 """Example 07: Query STAC metadata with DuckDB."""
-import duckdb
+
 import json
 from pathlib import Path
+
+import duckdb
 
 # Create synthetic STAC catalog
 catalog = {
@@ -10,7 +11,7 @@ catalog = {
     "id": "zqm-demo",
     "description": "Demo STAC catalog",
     "stac_version": "1.0.0",
-    "links": []
+    "links": [],
 }
 
 items = []
@@ -19,18 +20,16 @@ for i in range(10):
         "type": "Feature",
         "id": f"item-{i}",
         "stac_version": "1.0.0",
-        "geometry": {"type": "Point", "coordinates": [-80.93 + i*0.01, 29.02 + i*0.01]},
-        "bbox": [-80.93 + i*0.01, 29.02 + i*0.01, -80.93 + i*0.01, 29.02 + i*0.01],
+        "geometry": {"type": "Point", "coordinates": [-80.93 + i * 0.01, 29.02 + i * 0.01]},
+        "bbox": [-80.93 + i * 0.01, 29.02 + i * 0.01, -80.93 + i * 0.01, 29.02 + i * 0.01],
         "properties": {
-            "datetime": f"2026-01-{15+i:02d}T00:00:00Z",
+            "datetime": f"2026-01-{15 + i:02d}T00:00:00Z",
             "platform": "demo-satellite",
             "cloud_cover": i * 5,
-            "gsd": 10 + i
+            "gsd": 10 + i,
         },
-        "assets": {
-            "data": {"href": f"https://example.com/data/{i}.tif"}
-        },
-        "links": []
+        "assets": {"data": {"href": f"https://example.com/data/{i}.tif"}},
+        "links": [],
     }
     items.append(item)
 
