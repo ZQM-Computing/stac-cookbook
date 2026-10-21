@@ -105,7 +105,7 @@ CI runs `ruff check` / `ruff format --check` and the pytest suite on every push 
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues to <zqmcomputing@gmail.com> — please do not open a public issue for those.
+See [CONTRIBUTING.md](https://github.com/ZQM-Computing/stac-patterns/blob/main/CONTRIBUTING.md). Report security issues to <zqmcomputing@gmail.com> — please do not open a public issue for those.
 
 ## Related repositories
 
