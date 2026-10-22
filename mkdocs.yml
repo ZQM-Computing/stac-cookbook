@@ -1,4 +1,4 @@
-site_name: stac-patterns
+site_name: STAC Patterns
 site_url: https://stac.zqmlabs.com/
 site_description: STAC patterns for geospatial data discovery — catalog creation, item validation, search API, bulk ops
 site_author: ZQM Computing
@@ -6,6 +6,7 @@ repo_url: https://github.com/ZQM-Computing/stac-patterns
 
 theme:
   name: material
+  custom_dir: docs/overrides
   features:
     - navigation.tabs
     - navigation.sections
