@@ -1,4 +1,4 @@
-"""Tests for stac-patterns."""
+"""Tests for stac-cookbook."""
 
 import subprocess
 import sys

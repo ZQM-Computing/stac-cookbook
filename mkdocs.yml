@@ -2,7 +2,7 @@ site_name: STAC Patterns
 site_url: https://stac.zqmlabs.com/
 site_description: STAC patterns for geospatial data discovery — catalog creation, item validation, search API, bulk ops
 site_author: ZQM Computing
-repo_url: https://github.com/ZQM-Computing/stac-patterns
+repo_url: https://github.com/ZQM-Computing/stac-cookbook
 
 theme:
   name: material

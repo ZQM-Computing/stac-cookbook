@@ -1,5 +1,5 @@
 [project]
-name = "stac-patterns"
+name = "stac-cookbook"
 version = "0.1.0"
 description = "STAC patterns for geospatial data discovery"
 readme = "README.md"
@@ -9,7 +9,7 @@ authors = [{name = "ZQM Computing", email = "zqmcomputing@gmail.com"}]
 keywords = ["stac", "earth-observation", "satellite", "geospatial", "metadata"]
 
 [project.urls]
-Homepage = "https://github.com/ZQM-Computing/stac-patterns"
+Homepage = "https://github.com/ZQM-Computing/stac-cookbook"
 
 [tool.ruff]
 line-length = 120
