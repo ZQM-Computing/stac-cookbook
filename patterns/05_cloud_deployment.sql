@@ -1,0 +1,3 @@
+-- Pattern 05: Cloud Deployment
+-- Serve STAC API via pgstac + stac-fastapi on cloud
+-- docker run -p 8080:8080 stac-fastapi-pgstac

@@ -1,0 +1,3 @@
+-- Pattern 03: STAC Item Validation
+-- Validate item against STAC schema
+-- from stac_validator import validate; validate(item_dict)

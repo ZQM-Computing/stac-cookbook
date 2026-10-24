@@ -1,0 +1,3 @@
+-- Pattern 06: STAC + DuckDB
+-- Read STAC items into DuckDB
+-- SELECT * FROM read_json_auto('stac_items/*.json')

@@ -1,0 +1,3 @@
+-- Pattern 04: Rasterio Integration
+-- Open COG via rasterio from STAC asset href
+-- with rasterio.open(item.assets['data'].href) as src: arr = src.read()
