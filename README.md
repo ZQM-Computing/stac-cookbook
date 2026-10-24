@@ -10,6 +10,7 @@
 <!-- markdownlint-enable MD033 -->
 <!-- ZQM-END -->
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub](https://img.shields.io/github/stars/ZQM-Computing/stac-cookbook?style=social)
 [![CI](https://github.com/ZQM-Computing/stac-patterns/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Computing/stac-patterns/actions/workflows/ci.yml)
 
 Production-tested STAC patterns for geospatial data discovery — building catalogs, validating items, running search APIs, and wiring STAC metadata into DuckDB analytics and COG serving pipelines.
