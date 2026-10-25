@@ -190,7 +190,6 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
-
 def assert_item_collection_relationships(catalog_path: Path) -> None:
     """Validate local Item-to-Collection links and reverse Collection item links."""
     root = catalog_path.parent
