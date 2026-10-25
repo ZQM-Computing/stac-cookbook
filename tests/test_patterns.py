@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from pystac import STACObjectType
+from pystac.validation import validate_dict
+
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES_DIR = ROOT / "examples"
 EXPECTED_EXAMPLES = {
@@ -76,6 +79,14 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
 
     for document_path in documents:
         document = json.loads(document_path.read_text(encoding="utf-8"))
+        stac_type = {
+            "Catalog": STACObjectType.CATALOG,
+            "Collection": STACObjectType.COLLECTION,
+            "Feature": STACObjectType.ITEM,
+        }.get(document.get("type"))
+        assert stac_type is not None, f"Unexpected STAC document type {document.get('type')!r} in {document_path}"
+        validate_dict(document, stac_type)
+
         for link in document.get("links", []):
             href = link.get("href")
             assert isinstance(href, str) and href, f"Empty link href in {document_path}: {link}"
