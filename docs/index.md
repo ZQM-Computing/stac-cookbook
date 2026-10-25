@@ -1,3 +1,6 @@
+Title: STAC Patterns
+Description: SpatioTemporal Asset Catalog (STAC) examples for geospatial catalogs, collection and item validation, search APIs, and asset discovery workflows.
+
 # STAC Patterns
 
 <!-- ZQM-START -->
