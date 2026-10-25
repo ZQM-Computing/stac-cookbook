@@ -190,6 +190,81 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
+def assert_item_collection_relationships(catalog_path: Path) -> None:
+    """Validate local Item-to-Collection links and reverse Collection item links."""
+    root = catalog_path.parent
+    documents = sorted(root.rglob("*.json"))
+    by_path = {path.resolve(): json.loads(path.read_text(encoding="utf-8")) for path in documents}
+    collections = {
+        document.get("id"): (path, document)
+        for path, document in by_path.items()
+        if document.get("type") == "Collection"
+    }
+    items = {
+        document.get("id"): (path, document) for path, document in by_path.items() if document.get("type") == "Feature"
+    }
+
+    def local_target(source_path: Path, href: str) -> Path | None:
+        parsed = urlparse(href)
+        if parsed.scheme in ("http", "https") or (parsed.scheme and parsed.scheme != "file"):
+            return None
+        if parsed.scheme == "file":
+            return Path(unquote(parsed.path)).resolve()
+        if parsed.path.startswith("/"):
+            return Path(unquote(parsed.path)).resolve()
+        return (source_path.parent / unquote(parsed.path)).resolve()
+
+    for item_id, (item_path, item) in items.items():
+        collection_id = item.get("collection")
+        collection_links = [link for link in item.get("links", []) if link.get("rel") == "collection"]
+        if collection_id is None:
+            assert not collection_links, f"Item {item_id} has a collection link but no collection ID: {item_path}"
+            continue
+        assert isinstance(collection_id, str) and collection_id, (
+            f"Item has invalid collection ID in {item_path}: {collection_id!r}"
+        )
+        assert collection_links, f"Item {item_id} declares collection {collection_id!r} but has no collection link"
+        for link in collection_links:
+            target = local_target(item_path, link["href"])
+            if target is None:
+                continue
+            assert target in by_path, (
+                f"Item {item_id} collection link does not resolve to a local STAC document: {link['href']}"
+            )
+            collection = by_path[target]
+            assert collection.get("type") == "Collection", (
+                f"Item {item_id} collection link targets a non-Collection document: {target}"
+            )
+            assert collection.get("id") == collection_id, (
+                f"Item {item_id} declares collection {collection_id!r}, but link targets "
+                f"{collection.get('id')!r} at {target}"
+            )
+        if collection_id in collections:
+            expected_path, _ = collections[collection_id]
+            assert any(
+                local_target(item_path, link["href"]) == expected_path.resolve()
+                for link in collection_links
+                if local_target(item_path, link["href"]) is not None
+            ), f"Item {item_id} collection link does not point to the local document for collection {collection_id!r}"
+
+    for collection_id, (collection_path, collection) in collections.items():
+        for link in collection.get("links", []):
+            if link.get("rel") != "item":
+                continue
+            target = local_target(collection_path, link["href"])
+            if target is None:
+                continue
+            assert target in by_path, f"Collection {collection_id} item link does not resolve locally: {link['href']}"
+            item = by_path[target]
+            assert item.get("type") == "Feature", (
+                f"Collection {collection_id} item link targets a non-Item document: {target}"
+            )
+            assert item.get("collection") == collection_id, (
+                f"Collection {collection_id} links to Item {item.get('id')!r} whose collection "
+                f"field is {item.get('collection')!r}"
+            )
+
+
 def test_offline_stac_examples_run_end_to_end(tmp_path):
     """Exercise deterministic examples without network access, cloud credentials, or a service."""
     env = os.environ.copy()
@@ -224,3 +299,4 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             assert catalog.get("id") == expected_id, f"Unexpected catalog ID in {catalog_path}"
             assert catalog.get("stac_version"), f"Missing STAC version in {catalog_path}"
             assert_local_references_resolve(catalog_path)
+            assert_item_collection_relationships(catalog_path)
