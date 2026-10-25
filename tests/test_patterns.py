@@ -84,9 +84,7 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             "Collection": STACObjectType.COLLECTION,
             "Feature": STACObjectType.ITEM,
         }.get(document.get("type"))
-        assert stac_type is not None, (
-            f"Unexpected STAC document type {document.get('type')!r} in {document_path}"
-        )
+        assert stac_type is not None, f"Unexpected STAC document type {document.get('type')!r} in {document_path}"
         validate_dict(document, stac_type)
 
         for link in document.get("links", []):
