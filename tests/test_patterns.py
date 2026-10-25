@@ -317,6 +317,64 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
             )
 
 
+
+def assert_catalog_hierarchy(catalog_path: Path) -> None:
+    """Validate local Catalog/Collection child and parent links are reciprocal."""
+    documents = sorted(catalog_path.parent.rglob("*.json"))
+    by_path = {path.resolve(): json.loads(path.read_text(encoding="utf-8")) for path in documents}
+
+    def local_target(source_path: Path, href: str) -> Path | None:
+        parsed = urlparse(href)
+        if parsed.scheme in ("http", "https") or (parsed.scheme and parsed.scheme != "file"):
+            return None
+        if parsed.scheme == "file":
+            return Path(unquote(parsed.path)).resolve()
+        return (source_path.parent / unquote(parsed.path)).resolve()
+
+    for source_path, source in by_path.items():
+        source_type = source.get("type")
+        for link in source.get("links", []):
+            relation = link.get("rel")
+            if relation not in ("child", "parent"):
+                continue
+            target_path = local_target(source_path, link["href"])
+            if target_path is None:
+                continue
+            assert target_path in by_path, (
+                f"STAC {relation} link from {source.get('id')!r} does not resolve locally: {link['href']}"
+            )
+            target = by_path[target_path]
+            target_type = target.get("type")
+            if relation == "child":
+                assert source_type in ("Catalog", "Collection"), (
+                    f"STAC {source_type!r} document cannot have a child link: {source_path}"
+                )
+                assert target_type in ("Catalog", "Collection", "Feature"), (
+                    f"Child link from {source.get('id')!r} targets invalid STAC type {target_type!r}"
+                )
+                reverse_relation = "parent"
+            else:
+                assert source_type in ("Collection", "Feature"), (
+                    f"STAC {source_type!r} document cannot have a parent link: {source_path}"
+                )
+                assert target_type in ("Catalog", "Collection"), (
+                    f"Parent link from {source.get('id')!r} targets invalid STAC type {target_type!r}"
+                )
+                reverse_relation = "child"
+
+            reciprocal = any(
+                reverse.get("rel") == reverse_relation
+                and local_target(target_path, reverse.get("href", "")) == source_path
+                for reverse in target.get("links", [])
+                if isinstance(reverse.get("href"), str)
+            )
+            assert reciprocal, (
+                f"Non-reciprocal STAC hierarchy link: {source_type} {source.get('id')!r} "
+                f"rel={relation!r} -> {target_type} {target.get('id')!r} lacks reverse "
+                f"rel={reverse_relation!r}"
+            )
+
+
 def test_offline_stac_examples_run_end_to_end(tmp_path):
     """Exercise deterministic examples without network access, cloud credentials, or a service."""
     env = os.environ.copy()
@@ -352,3 +410,4 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             assert catalog.get("stac_version"), f"Missing STAC version in {catalog_path}"
             assert_local_references_resolve(catalog_path)
             assert_item_collection_relationships(catalog_path)
+            assert_catalog_hierarchy(catalog_path)
