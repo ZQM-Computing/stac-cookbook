@@ -19,7 +19,7 @@ Runnable STAC cookbook examples for geospatial data discovery — building catal
 
 **Status:** Active, public.
 
-**What this repository is:** STAC patterns for geospatial data discovery — building catalogs, validating items, running search APIs, and wiring STAC metadata into DuckDB analytics and COG serving pipelines.
+**What this repository is:** A set of standalone STAC examples for building catalogs, collections, and items; validating metadata; exploring search APIs; and integrating with DuckDB and COG workflows.
 
 **What it contributes:** Part of the ZQM Computing public geospatial portfolio — production-grade pattern and reference repositories that document geospatial engineering practice across the stack. This repository is the reusable pattern library for its layer: working code and runbooks that practitioners can lift into their own pipelines, and portfolio evidence of the engineering practice behind ZQM Computing. The umbrella index for the series is [geospatial-cookbooks](https://github.com/ZQM-Computing/geospatial-cookbooks).
 
@@ -90,11 +90,6 @@ stac-cookbook/
 ```
 
 ## Validation
-
-```bash
-pip install pytest
-pytest            # verifies every example compiles
-```
 
 For local validation, install the configured tools and run:
 
