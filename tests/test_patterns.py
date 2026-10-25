@@ -337,6 +337,10 @@ def assert_catalog_hierarchy(catalog_path: Path) -> None:
             relation = link.get("rel")
             if relation not in ("child", "parent"):
                 continue
+            # Item-to-Collection parentage is validated separately; STAC Collections
+            # do not require a reciprocal Catalog/Collection child link for each Item.
+            if source_type == "Feature" or (relation == "child" and source_type not in ("Catalog", "Collection")):
+                continue
             target_path = local_target(source_path, link["href"])
             if target_path is None:
                 continue
@@ -349,7 +353,7 @@ def assert_catalog_hierarchy(catalog_path: Path) -> None:
                 assert source_type in ("Catalog", "Collection"), (
                     f"STAC {source_type!r} document cannot have a child link: {source_path}"
                 )
-                assert target_type in ("Catalog", "Collection", "Feature"), (
+                assert target_type in ("Catalog", "Collection"), (
                     f"Child link from {source.get('id')!r} targets invalid STAC type {target_type!r}"
                 )
                 reverse_relation = "parent"
