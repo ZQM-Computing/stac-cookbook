@@ -528,3 +528,25 @@ def test_catalog_hierarchy_rejects_non_reciprocal_parent_child_links(tmp_path):
         assert "Non-reciprocal STAC hierarchy link" in str(error)
     else:
         raise AssertionError("Non-reciprocal hierarchy link unexpectedly passed validation")
+
+
+def test_item_outside_collection_temporal_extent_is_rejected(tmp_path):
+    """An Item timestamp outside the Collection interval must fail validation."""
+    item = {
+        "id": "outside-time-item",
+        "bbox": [-80.8, 28.1, -80.7, 28.2],
+        "properties": {"datetime": "2027-01-01T00:00:00Z"},
+    }
+    collection = {
+        "extent": {
+            "spatial": {"bbox": [[-81.0, 28.0, -80.0, 29.0]]},
+            "temporal": {"interval": [["2026-01-01T00:00:00Z", "2026-12-31T23:59:59Z"]]},
+        }
+    }
+    try:
+        assert_item_within_collection_extent(item, collection, tmp_path / "outside-time-item.json")
+    except AssertionError as error:
+        assert "temporal range" in str(error)
+        assert "falls outside Collection temporal extent" in str(error)
+    else:
+        raise AssertionError("Item outside Collection temporal extent unexpectedly passed validation")
