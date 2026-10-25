@@ -202,9 +202,7 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
         if document.get("type") == "Collection"
     }
     items = {
-        document.get("id"): (path, document)
-        for path, document in by_path.items()
-        if document.get("type") == "Feature"
+        document.get("id"): (path, document) for path, document in by_path.items() if document.get("type") == "Feature"
     }
 
     def local_target(source_path: Path, href: str) -> Path | None:
@@ -219,13 +217,9 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
 
     for item_id, (item_path, item) in items.items():
         collection_id = item.get("collection")
-        collection_links = [
-            link for link in item.get("links", []) if link.get("rel") == "collection"
-        ]
+        collection_links = [link for link in item.get("links", []) if link.get("rel") == "collection"]
         if collection_id is None:
-            assert not collection_links, (
-                f"Item {item_id} has a collection link but no collection ID: {item_path}"
-            )
+            assert not collection_links, f"Item {item_id} has a collection link but no collection ID: {item_path}"
             continue
         assert isinstance(collection_id, str) and collection_id, (
             f"Item has invalid collection ID in {item_path}: {collection_id!r}"
@@ -252,10 +246,7 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
                 local_target(item_path, link["href"]) == expected_path.resolve()
                 for link in collection_links
                 if local_target(item_path, link["href"]) is not None
-            ), (
-                f"Item {item_id} collection link does not point to the local document "
-                f"for collection {collection_id!r}"
-            )
+            ), f"Item {item_id} collection link does not point to the local document for collection {collection_id!r}"
 
     for collection_id, (collection_path, collection) in collections.items():
         for link in collection.get("links", []):
@@ -264,9 +255,7 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
             target = local_target(collection_path, link["href"])
             if target is None:
                 continue
-            assert target in by_path, (
-                f"Collection {collection_id} item link does not resolve locally: {link['href']}"
-            )
+            assert target in by_path, f"Collection {collection_id} item link does not resolve locally: {link['href']}"
             item = by_path[target]
             assert item.get("type") == "Feature", (
                 f"Collection {collection_id} item link targets a non-Item document: {target}"
