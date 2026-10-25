@@ -88,15 +88,11 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
                 continue
             else:
                 target = (document_path.parent / unquote(parsed.path)).resolve()
-            assert target.is_file(), (
-                f"Broken local STAC link rel={link.get('rel')!r} in {document_path}: {href}"
-            )
+            assert target.is_file(), f"Broken local STAC link rel={link.get('rel')!r} in {document_path}: {href}"
 
         for asset_key, asset in document.get("assets", {}).items():
             href = asset.get("href")
-            assert isinstance(href, str) and href, (
-                f"Empty asset href for {asset_key!r} in {document_path}"
-            )
+            assert isinstance(href, str) and href, f"Empty asset href for {asset_key!r} in {document_path}"
             parsed = urlparse(href)
             if parsed.scheme in ("http", "https"):
                 continue
@@ -106,9 +102,7 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
                 continue
             else:
                 target = (document_path.parent / unquote(parsed.path)).resolve()
-            assert target.is_file(), (
-                f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
-            )
+            assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
 def test_offline_stac_examples_run_end_to_end(tmp_path):
