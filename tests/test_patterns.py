@@ -191,7 +191,6 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
-
 def assert_item_within_collection_extent(item: dict, collection: dict, path: Path) -> None:
     """Ensure an Item's spatial and temporal footprint fits its Collection extent."""
     item_bbox = item.get("bbox")
