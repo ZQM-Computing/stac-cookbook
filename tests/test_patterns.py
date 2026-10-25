@@ -435,3 +435,96 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             assert_local_references_resolve(catalog_path)
             assert_item_collection_relationships(catalog_path)
             assert_catalog_hierarchy(catalog_path)
+
+
+def test_stac_datetime_rejects_malformed_and_timezone_naive_values():
+    """Malformed and timezone-naive timestamps must not pass as valid STAC datetimes."""
+    for value in ("", "not-a-date", "2026-13-01T00:00:00Z", "2026-10-25T12:00:00"):
+        try:
+            parse_stac_datetime(value, Path("item.json"))
+        except AssertionError:
+            continue
+        raise AssertionError(f"Invalid STAC datetime unexpectedly accepted: {value!r}")
+
+
+def test_stac_datetime_compares_instants_across_timezone_offsets():
+    """Timestamp ordering must compare instants, not their source strings."""
+    earlier = parse_stac_datetime("2026-10-25T10:00:00-04:00", Path("item.json"))
+    later = parse_stac_datetime("2026-10-25T13:30:00Z", Path("item.json"))
+    assert earlier < later
+    assert parse_stac_datetime("2026-10-25T09:00:00-04:00", Path("item.json")) == parse_stac_datetime(
+        "2026-10-25T13:00:00Z", Path("item.json")
+    )
+
+
+def test_item_outside_collection_spatial_extent_is_rejected(tmp_path):
+    """A valid-looking Item bbox outside its Collection extent must fail validation."""
+    item = {
+        "id": "outside-item",
+        "bbox": [-79.0, 30.0, -78.9, 30.1],
+        "properties": {"datetime": "2026-10-25T13:00:00Z"},
+    }
+    collection = {
+        "extent": {
+            "spatial": {"bbox": [[-81.0, 28.0, -80.0, 29.0]]},
+            "temporal": {"interval": [["2026-01-01T00:00:00Z", "2026-12-31T23:59:59Z"]]},
+        }
+    }
+    try:
+        assert_item_within_collection_extent(item, collection, tmp_path / "outside-item.json")
+    except AssertionError as error:
+        assert "outside Collection spatial extent" in str(error)
+    else:
+        raise AssertionError("Item outside Collection spatial extent unexpectedly passed validation")
+
+
+def test_catalog_hierarchy_rejects_broken_local_child_link(tmp_path):
+    """Local child links must resolve to an existing Catalog or Collection document."""
+    root = tmp_path / "catalog"
+    root.mkdir()
+    catalog_path = root / "catalog.json"
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "type": "Catalog",
+                "id": "root",
+                "links": [{"rel": "child", "href": "missing-collection/collection.json"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    try:
+        assert_catalog_hierarchy(catalog_path)
+    except AssertionError as error:
+        assert "does not resolve locally" in str(error)
+    else:
+        raise AssertionError("Broken local child link unexpectedly passed hierarchy validation")
+
+
+def test_catalog_hierarchy_rejects_non_reciprocal_parent_child_links(tmp_path):
+    """A child Catalog/Collection must point back to its parent."""
+    root = tmp_path / "catalog"
+    child_dir = root / "child"
+    child_dir.mkdir(parents=True)
+    catalog_path = root / "catalog.json"
+    child_path = child_dir / "collection.json"
+    catalog_path.write_text(
+        json.dumps(
+            {
+                "type": "Catalog",
+                "id": "root",
+                "links": [{"rel": "child", "href": "child/collection.json"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    child_path.write_text(
+        json.dumps({"type": "Collection", "id": "child", "links": []}),
+        encoding="utf-8",
+    )
+    try:
+        assert_catalog_hierarchy(catalog_path)
+    except AssertionError as error:
+        assert "Non-reciprocal STAC hierarchy link" in str(error)
+    else:
+        raise AssertionError("Non-reciprocal hierarchy link unexpectedly passed validation")
