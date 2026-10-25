@@ -1,5 +1,6 @@
 """Inventory, syntax, and offline runtime tests for the STAC cookbook."""
 
+import json
 import os
 import subprocess
 import sys
@@ -29,15 +30,33 @@ OFFLINE_STAC_EXAMPLES = (
     "11-bulk-operations",
     "12-stac-games",
 )
+EXPECTED_OUTPUT_MARKERS = {
+    "01-catalog-creation": ("Catalog saved: zqm-demo-catalog", "Item: demo-item-1"),
+    "02-item-validation": ("Item is valid STAC", "All required fields present"),
+    "05-cloud-deployment": ("Catalog prepared for cloud deployment", "Catalog path: output/cloud_catalog"),
+    "06-full-workflow": ("Catalog saved with 3 items", "Output: output/full_workflow"),
+    "11-bulk-operations": ("Created 100 items", "Total items: 100"),
+    "12-stac-games": ("Game locations: 6", "Content packs: 3"),
+}
+EXPECTED_CATALOGS = {
+    "01-catalog-creation": ("catalog", "zqm-demo-catalog"),
+    "05-cloud-deployment": ("cloud_catalog", "zqm-cloud-catalog"),
+    "06-full-workflow": ("full_workflow", "zqm-full-workflow"),
+    "11-bulk-operations": ("bulk_catalog", "bulk-catalog"),
+    "12-stac-games": ("game_catalog", "zqm-labs-game-assets"),
+}
 
 
 def test_exact_example_inventory():
     """README's 12-example promise cannot silently regress to a partial tree."""
-    actual = {path.parent.name for path in EXAMPLES_DIR.glob("*/run.py")}
+    scripts = sorted(EXAMPLES_DIR.glob("*/run.py"))
+    actual = {path.parent.name for path in scripts}
     assert actual == EXPECTED_EXAMPLES, (
         f"Example inventory mismatch. Missing: {sorted(EXPECTED_EXAMPLES - actual)}; "
         f"unexpected: {sorted(actual - EXPECTED_EXAMPLES)}"
     )
+    for script in scripts:
+        assert script.stat().st_size > 0, f"Example entry point is empty: {script}"
 
 
 def test_all_examples_have_valid_python_syntax():
@@ -66,3 +85,18 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
         assert result.returncode == 0, (
             f"{name} failed with exit code {result.returncode}.\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )
+        for marker in EXPECTED_OUTPUT_MARKERS[name]:
+            assert marker in result.stdout, (
+                f"{name} did not report expected result {marker!r}. stdout:\n{result.stdout}"
+            )
+
+        if name in EXPECTED_CATALOGS:
+            directory, expected_id = EXPECTED_CATALOGS[name]
+            catalog_path = tmp_path / "output" / directory / "catalog.json"
+            assert catalog_path.is_file() and catalog_path.stat().st_size > 0, (
+                f"{name} did not create a non-empty catalog: {catalog_path}"
+            )
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+            assert catalog.get("type") == "Catalog", f"Unexpected STAC root type in {catalog_path}"
+            assert catalog.get("id") == expected_id, f"Unexpected catalog ID in {catalog_path}"
+            assert catalog.get("stac_version"), f"Missing STAC version in {catalog_path}"
