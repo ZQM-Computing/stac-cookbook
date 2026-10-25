@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -190,6 +191,56 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
+def assert_item_within_collection_extent(item: dict, collection: dict, path: Path) -> None:
+    """Ensure an Item's spatial and temporal footprint fits its Collection extent."""
+    item_bbox = item.get("bbox")
+    spatial_extents = collection.get("extent", {}).get("spatial", {}).get("bbox", [])
+    if isinstance(item_bbox, list) and spatial_extents:
+        item_dimensions = len(item_bbox) // 2
+        item_minima, item_maxima = item_bbox[:item_dimensions], item_bbox[item_dimensions:]
+        assert len(item_bbox) in (4, 6), f"Invalid Item bbox in {path}: {item_bbox}"
+        assert any(
+            len(extent) in (4, 6)
+            and all(
+                extent[index] <= item_minima[index] + 1e-9
+                and item_maxima[index] <= extent[index + len(extent) // 2] + 1e-9
+                for index in range(2)
+            )
+            for extent in spatial_extents
+        ), f"Item {item.get('id')!r} bbox {item_bbox} falls outside Collection spatial extent in {path}"
+
+    def parse_datetime(value: str | None) -> object | None:
+        if value is None:
+            return None
+        normalized = value.replace("Z", "+00:00")
+        return datetime.fromisoformat(normalized)
+
+    properties = item.get("properties", {})
+    item_start = properties.get("datetime") or properties.get("start_datetime")
+    item_end = properties.get("datetime") or properties.get("end_datetime")
+    temporal_extents = collection.get("extent", {}).get("temporal", {}).get("interval", [])
+    if item_start is None or item_end is None or not temporal_extents:
+        return
+
+    parsed_start = parse_datetime(item_start)
+    parsed_end = parse_datetime(item_end)
+    assert parsed_start is not None and parsed_end is not None
+    fits_interval = False
+    for interval in temporal_extents:
+        start, end = interval
+        parsed_collection_start = parse_datetime(start)
+        parsed_collection_end = parse_datetime(end)
+        if (parsed_collection_start is None or parsed_collection_start <= parsed_start) and (
+            parsed_collection_end is None or parsed_end <= parsed_collection_end
+        ):
+            fits_interval = True
+            break
+    assert fits_interval, (
+        f"Item {item.get('id')!r} temporal range [{item_start}, {item_end}] falls outside "
+        f"Collection temporal extent in {path}"
+    )
+
+
 def assert_item_collection_relationships(catalog_path: Path) -> None:
     """Validate local Item-to-Collection links and reverse Collection item links."""
     root = catalog_path.parent
@@ -239,6 +290,7 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
                 f"Item {item_id} declares collection {collection_id!r}, but link targets "
                 f"{collection.get('id')!r} at {target}"
             )
+            assert_item_within_collection_extent(item, collection, item_path)
         if collection_id in collections:
             expected_path, _ = collections[collection_id]
             assert any(

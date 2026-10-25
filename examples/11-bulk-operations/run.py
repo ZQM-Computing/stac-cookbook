@@ -23,7 +23,7 @@ print(f"  Created {len(items)} items")
 
 # Bulk add to collection
 extent = Extent(
-    spatial=SpatialExtent(bboxes=[[-80.95, 28.95, -80.90, 29.05]]),
+    spatial=SpatialExtent(bboxes=[[-80.95, 28.95, -80.83, 29.12]]),
     temporal=TemporalExtent(intervals=[[base_date, None]]),
 )
 collection = Collection(id="bulk-collection", description="Bulk demo", extent=extent)
