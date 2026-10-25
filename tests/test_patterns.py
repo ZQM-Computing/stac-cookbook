@@ -71,6 +71,76 @@ def test_all_examples_have_valid_python_syntax():
         compile(script.read_text(encoding="utf-8"), str(script), "exec")
 
 
+def _coordinate_pairs(value):
+    """Yield coordinate pairs recursively from a GeoJSON geometry coordinate tree."""
+    if (
+        isinstance(value, (list, tuple))
+        and len(value) >= 2
+        and all(isinstance(component, (int, float)) for component in value[:2])
+    ):
+        yield value[0], value[1]
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            yield from _coordinate_pairs(child)
+
+
+def assert_item_spatiotemporal_consistency(document: dict, path: Path) -> None:
+    """Check STAC Item geometry, bbox, and temporal metadata agree."""
+    geometry = document.get("geometry")
+    bbox = document.get("bbox")
+    assert isinstance(geometry, dict) and geometry.get("type"), f"Missing GeoJSON geometry in {path}"
+    assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid STAC Item bbox in {path}: {bbox}"
+    assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric STAC Item bbox in {path}: {bbox}"
+    dimensions = len(bbox) // 2
+    minima, maxima = bbox[:dimensions], bbox[dimensions:]
+    assert all(low <= high for low, high in zip(minima, maxima)), f"Reversed STAC Item bbox in {path}: {bbox}"
+
+    coordinates = list(_coordinate_pairs(geometry.get("coordinates")))
+    assert coordinates, f"Geometry has no coordinate pairs in {path}"
+    for longitude, latitude in coordinates:
+        assert bbox[0] - 1e-9 <= longitude <= bbox[dimensions] + 1e-9, (
+            f"Longitude {longitude} falls outside Item bbox {bbox} in {path}"
+        )
+        assert bbox[1] - 1e-9 <= latitude <= bbox[dimensions + 1] + 1e-9, (
+            f"Latitude {latitude} falls outside Item bbox {bbox} in {path}"
+        )
+
+    properties = document.get("properties", {})
+    instant = properties.get("datetime")
+    start = properties.get("start_datetime")
+    end = properties.get("end_datetime")
+    assert instant is not None or (start is not None and end is not None), (
+        f"Item needs datetime or both start_datetime and end_datetime in {path}"
+    )
+    if start is not None and end is not None:
+        assert start <= end, f"Item start_datetime is after end_datetime in {path}: {start} > {end}"
+
+
+def assert_collection_extent_consistency(document: dict, path: Path) -> None:
+    """Check Collection spatial and temporal extent shapes and ordering."""
+    extent = document.get("extent", {})
+    spatial = extent.get("spatial", {}).get("bbox", [])
+    temporal = extent.get("temporal", {}).get("interval", [])
+    assert spatial, f"Collection has no spatial bbox extent in {path}"
+    assert temporal, f"Collection has no temporal interval extent in {path}"
+
+    for bbox in spatial:
+        assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid Collection bbox in {path}: {bbox}"
+        dimensions = len(bbox) // 2
+        minima, maxima = bbox[:dimensions], bbox[dimensions:]
+        assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric Collection bbox in {path}: {bbox}"
+        assert all(low <= high for low, high in zip(minima, maxima)), f"Reversed Collection bbox in {path}: {bbox}"
+
+    for interval in temporal:
+        assert isinstance(interval, list) and len(interval) == 2, (
+            f"Invalid Collection temporal interval in {path}: {interval}"
+        )
+        start, end = interval
+        assert start is None or end is None or start <= end, (
+            f"Reversed Collection temporal interval in {path}: {interval}"
+        )
+
+
 def assert_local_references_resolve(catalog_path: Path) -> None:
     """Validate local STAC links and asset hrefs without making network requests."""
     root = catalog_path.parent
@@ -86,6 +156,10 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
         }.get(document.get("type"))
         assert stac_type is not None, f"Unexpected STAC document type {document.get('type')!r} in {document_path}"
         validate_dict(document, stac_type)
+        if stac_type == STACObjectType.ITEM:
+            assert_item_spatiotemporal_consistency(document, document_path)
+        elif stac_type == STACObjectType.COLLECTION:
+            assert_collection_extent_consistency(document, document_path)
 
         for link in document.get("links", []):
             href = link.get("href")
