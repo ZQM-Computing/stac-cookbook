@@ -64,6 +64,5 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             check=False,
         )
         assert result.returncode == 0, (
-            f"{name} failed with exit code {result.returncode}.\n"
-            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+            f"{name} failed with exit code {result.returncode}.\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
         )

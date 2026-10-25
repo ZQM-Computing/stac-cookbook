@@ -13,13 +13,13 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub](https://img.shields.io/github/stars/ZQM-Computing/stac-cookbook?style=social)
 [![CI](https://github.com/ZQM-Computing/stac-cookbook/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Computing/stac-cookbook/actions/workflows/ci.yml)
 
-Production-tested STAC patterns for geospatial data discovery — building catalogs, validating items, running search APIs, and wiring STAC metadata into DuckDB analytics and COG serving pipelines.
+Runnable STAC cookbook examples for geospatial data discovery — building catalogs, validating items, exploring search APIs, and connecting STAC metadata to DuckDB analytics and COG workflows.
 
 ## Repository role and status
 
 **Status:** Active, public.
 
-**What this repository is:** STAC patterns for geospatial data discovery — building catalogs, validating items, running search APIs, and wiring STAC metadata into DuckDB analytics and COG serving pipelines.
+**What this repository is:** A set of standalone STAC examples for building catalogs, collections, and items; validating metadata; exploring search APIs; and integrating with DuckDB and COG workflows.
 
 **What it contributes:** Part of the ZQM Computing public geospatial portfolio — production-grade pattern and reference repositories that document geospatial engineering practice across the stack. This repository is the reusable pattern library for its layer: working code and runbooks that practitioners can lift into their own pipelines, and portfolio evidence of the engineering practice behind ZQM Computing. The umbrella index for the series is [geospatial-cookbooks](https://github.com/ZQM-Computing/geospatial-cookbooks).
 
@@ -82,7 +82,7 @@ stac-cookbook/
 │   ├── 01-catalog-creation/run.py
 │   └── ... (one run.py per pattern, 12 total)
 ├── tests/
-│   └── test_patterns.py     # py_compile syntax checks for every example
+│   └── test_patterns.py     # exact inventory, syntax checks, and offline runtime tests
 ├── pyproject.toml
 ├── README.md
 ├── LICENSE
@@ -91,12 +91,16 @@ stac-cookbook/
 
 ## Validation
 
+For local validation, install the configured tools and run:
+
 ```bash
-pip install pytest
-pytest            # verifies every example compiles
+python -m pip install pytest ruff
+python -m ruff check examples tests
+python -m ruff format --check examples tests
+python -m pytest -q
 ```
 
-CI runs `ruff check` / `ruff format --check` and the pytest suite on every push and pull request.
+The Python CI job runs the same Ruff checks and pytest suite for code changes. The separate documentation job checks repository metadata and documentation. Markdown-only changes are excluded from the general CI workflow; prose lint runs through its own workflow.
 
 ## Roadmap
 
