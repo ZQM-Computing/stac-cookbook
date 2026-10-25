@@ -85,7 +85,6 @@ def _coordinate_pairs(value):
             yield from _coordinate_pairs(child)
 
 
-
 def parse_stac_datetime(value: str, path: Path) -> datetime:
     """Parse an RFC 3339 timestamp and require an explicit UTC offset."""
     assert isinstance(value, str) and value, f"Invalid STAC datetime in {path}: {value!r}"
