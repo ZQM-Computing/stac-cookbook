@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from urllib.parse import unquote, urlparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -67,6 +68,49 @@ def test_all_examples_have_valid_python_syntax():
         compile(script.read_text(encoding="utf-8"), str(script), "exec")
 
 
+def assert_local_references_resolve(catalog_path: Path) -> None:
+    """Validate local STAC links and asset hrefs without making network requests."""
+    root = catalog_path.parent
+    documents = sorted(root.rglob("*.json"))
+    assert documents, f"No JSON documents found under STAC output: {root}"
+
+    for document_path in documents:
+        document = json.loads(document_path.read_text(encoding="utf-8"))
+        for link in document.get("links", []):
+            href = link.get("href")
+            assert isinstance(href, str) and href, f"Empty link href in {document_path}: {link}"
+            parsed = urlparse(href)
+            if parsed.scheme in ("http", "https"):
+                continue
+            if parsed.scheme == "file":
+                target = Path(unquote(parsed.path))
+            elif parsed.scheme:
+                continue
+            else:
+                target = (document_path.parent / unquote(parsed.path)).resolve()
+            assert target.is_file(), (
+                f"Broken local STAC link rel={link.get('rel')!r} in {document_path}: {href}"
+            )
+
+        for asset_key, asset in document.get("assets", {}).items():
+            href = asset.get("href")
+            assert isinstance(href, str) and href, (
+                f"Empty asset href for {asset_key!r} in {document_path}"
+            )
+            parsed = urlparse(href)
+            if parsed.scheme in ("http", "https"):
+                continue
+            if parsed.scheme == "file":
+                target = Path(unquote(parsed.path))
+            elif parsed.scheme:
+                continue
+            else:
+                target = (document_path.parent / unquote(parsed.path)).resolve()
+            assert target.is_file(), (
+                f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
+            )
+
+
 def test_offline_stac_examples_run_end_to_end(tmp_path):
     """Exercise deterministic examples without network access, cloud credentials, or a service."""
     env = os.environ.copy()
@@ -100,3 +144,4 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             assert catalog.get("type") == "Catalog", f"Unexpected STAC root type in {catalog_path}"
             assert catalog.get("id") == expected_id, f"Unexpected catalog ID in {catalog_path}"
             assert catalog.get("stac_version"), f"Missing STAC version in {catalog_path}"
+            assert_local_references_resolve(catalog_path)
