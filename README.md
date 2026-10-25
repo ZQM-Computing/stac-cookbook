@@ -13,7 +13,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub](https://img.shields.io/github/stars/ZQM-Computing/stac-cookbook?style=social)
 [![CI](https://github.com/ZQM-Computing/stac-cookbook/actions/workflows/ci.yml/badge.svg)](https://github.com/ZQM-Computing/stac-cookbook/actions/workflows/ci.yml)
 
-Runnable STAC cookbook examples for geospatial data discovery — building catalogs, validating items, exploring search APIs, and connecting STAC metadata to DuckDB analytics and COG workflows.
+Runnable SpatioTemporal Asset Catalog (STAC) examples for geospatial data discovery: create catalogs, collections, and items; validate metadata; explore search APIs; and connect asset metadata with DuckDB and Cloud Optimized GeoTIFF (COG) workflows. Examples document their tested scope and do not imply a live catalog.
 
 ## Repository role and status
 

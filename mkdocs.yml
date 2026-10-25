@@ -1,6 +1,6 @@
 site_name: STAC Patterns
 site_url: https://stac.zqmlabs.com/
-site_description: STAC patterns for geospatial data discovery — catalog creation, item validation, search API, bulk ops
+site_description: SpatioTemporal Asset Catalog (STAC) examples for geospatial catalogs, collection and item validation, search APIs, and asset discovery workflows.
 site_author: ZQM Computing
 repo_url: https://github.com/ZQM-Computing/stac-cookbook
 
@@ -14,6 +14,7 @@ theme:
     - search.highlight
 
 markdown_extensions:
+  - meta
   - admonition
   - codehilite
   - toc:
