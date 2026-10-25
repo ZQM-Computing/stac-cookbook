@@ -449,7 +449,7 @@ def test_stac_datetime_rejects_malformed_and_timezone_naive_values():
 
 def test_stac_datetime_compares_instants_across_timezone_offsets():
     """Timestamp ordering must compare instants, not their source strings."""
-    earlier = parse_stac_datetime("2026-10-25T10:00:00-04:00", Path("item.json"))
+    earlier = parse_stac_datetime("2026-10-25T08:00:00-04:00", Path("item.json"))
     later = parse_stac_datetime("2026-10-25T13:30:00Z", Path("item.json"))
     assert earlier < later
     assert parse_stac_datetime("2026-10-25T09:00:00-04:00", Path("item.json")) == parse_stac_datetime(
