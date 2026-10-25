@@ -4,8 +4,8 @@ import json
 import os
 import subprocess
 import sys
-from urllib.parse import unquote, urlparse
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES_DIR = ROOT / "examples"
