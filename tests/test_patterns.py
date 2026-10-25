@@ -85,6 +85,20 @@ def _coordinate_pairs(value):
             yield from _coordinate_pairs(child)
 
 
+def parse_stac_datetime(value: str, path: Path) -> datetime:
+    """Parse an RFC 3339 timestamp and require an explicit UTC offset."""
+    assert isinstance(value, str) and value, f"Invalid STAC datetime in {path}: {value!r}"
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as error:
+        raise AssertionError(f"Invalid STAC datetime in {path}: {value!r}") from error
+    assert parsed.tzinfo is not None and parsed.utcoffset() is not None, (
+        f"STAC datetime must include a UTC offset in {path}: {value!r}"
+    )
+    return parsed
+
+
 def assert_item_spatiotemporal_consistency(document: dict, path: Path) -> None:
     """Check STAC Item geometry, bbox, and temporal metadata agree."""
     geometry = document.get("geometry")
@@ -113,8 +127,16 @@ def assert_item_spatiotemporal_consistency(document: dict, path: Path) -> None:
     assert instant is not None or (start is not None and end is not None), (
         f"Item needs datetime or both start_datetime and end_datetime in {path}"
     )
+    if instant is not None:
+        parse_stac_datetime(instant, path)
+    if start is not None:
+        parse_stac_datetime(start, path)
+    if end is not None:
+        parse_stac_datetime(end, path)
     if start is not None and end is not None:
-        assert start <= end, f"Item start_datetime is after end_datetime in {path}: {start} > {end}"
+        assert parse_stac_datetime(start, path) <= parse_stac_datetime(end, path), (
+            f"Item start_datetime is after end_datetime in {path}: {start} > {end}"
+        )
 
 
 def assert_collection_extent_consistency(document: dict, path: Path) -> None:
@@ -137,7 +159,9 @@ def assert_collection_extent_consistency(document: dict, path: Path) -> None:
             f"Invalid Collection temporal interval in {path}: {interval}"
         )
         start, end = interval
-        assert start is None or end is None or start <= end, (
+        parsed_start = parse_stac_datetime(start, path) if start is not None else None
+        parsed_end = parse_stac_datetime(end, path) if end is not None else None
+        assert parsed_start is None or parsed_end is None or parsed_start <= parsed_end, (
             f"Reversed Collection temporal interval in {path}: {interval}"
         )
 
@@ -209,11 +233,8 @@ def assert_item_within_collection_extent(item: dict, collection: dict, path: Pat
             for extent in spatial_extents
         ), f"Item {item.get('id')!r} bbox {item_bbox} falls outside Collection spatial extent in {path}"
 
-    def parse_datetime(value: str | None) -> object | None:
-        if value is None:
-            return None
-        normalized = value.replace("Z", "+00:00")
-        return datetime.fromisoformat(normalized)
+    def parse_datetime(value: str | None) -> datetime | None:
+        return parse_stac_datetime(value, path) if value is not None else None
 
     properties = item.get("properties", {})
     item_start = properties.get("datetime") or properties.get("start_datetime")
