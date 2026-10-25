@@ -1,24 +1,69 @@
-"""Tests for stac-cookbook."""
+"""Inventory, syntax, and offline runtime tests for the STAC cookbook."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
+ROOT = Path(__file__).resolve().parent.parent
+EXAMPLES_DIR = ROOT / "examples"
+EXPECTED_EXAMPLES = {
+    "01-catalog-creation",
+    "02-item-validation",
+    "03-search-api",
+    "04-rasterio-integration",
+    "05-cloud-deployment",
+    "06-full-workflow",
+    "07-stac-duckdb",
+    "08-stac-cog-pipeline",
+    "09-stac-validation",
+    "10-stac-api-server",
+    "11-bulk-operations",
+    "12-stac-games",
+}
+OFFLINE_STAC_EXAMPLES = (
+    "01-catalog-creation",
+    "02-item-validation",
+    "05-cloud-deployment",
+    "06-full-workflow",
+    "11-bulk-operations",
+    "12-stac-games",
+)
 
 
-def test_python_syntax():
-    """All Python examples have valid syntax."""
-    for py_file in sorted(EXAMPLES_DIR.glob("*/run.py")):
-        result = subprocess.run([sys.executable, "-m", "py_compile", str(py_file)], capture_output=True, check=True)
-        assert result.returncode == 0, f"Syntax error in {py_file}"
+def test_exact_example_inventory():
+    """README's 12-example promise cannot silently regress to a partial tree."""
+    actual = {path.parent.name for path in EXAMPLES_DIR.glob("*/run.py")}
+    assert actual == EXPECTED_EXAMPLES, (
+        f"Example inventory mismatch. Missing: {sorted(EXPECTED_EXAMPLES - actual)}; "
+        f"unexpected: {sorted(actual - EXPECTED_EXAMPLES)}"
+    )
 
 
-def test_readme_exists():
-    """README.md exists."""
-    assert (Path(__file__).parent.parent / "README.md").exists()
+def test_all_examples_have_valid_python_syntax():
+    """Compile source in memory to avoid leaving __pycache__ files in the checkout."""
+    scripts = sorted(EXAMPLES_DIR.glob("*/run.py"))
+    assert scripts, "No examples/*/run.py scripts found"
+    for script in scripts:
+        compile(script.read_text(encoding="utf-8"), str(script), "exec")
 
 
-def test_license_exists():
-    """LICENSE file exists."""
-    assert (Path(__file__).parent.parent / "LICENSE").exists()
+def test_offline_stac_examples_run_end_to_end(tmp_path):
+    """Exercise deterministic examples without network access, cloud credentials, or a service."""
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    for name in OFFLINE_STAC_EXAMPLES:
+        script = EXAMPLES_DIR / name / "run.py"
+        result = subprocess.run(
+            [sys.executable, str(script)],
+            cwd=tmp_path,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+        assert result.returncode == 0, (
+            f"{name} failed with exit code {result.returncode}.\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
