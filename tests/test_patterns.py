@@ -73,8 +73,10 @@ def test_all_examples_have_valid_python_syntax():
 
 def _coordinate_pairs(value):
     """Yield coordinate pairs recursively from a GeoJSON geometry coordinate tree."""
-    if isinstance(value, (list, tuple)) and len(value) >= 2 and all(
-        isinstance(component, (int, float)) for component in value[:2]
+    if (
+        isinstance(value, (list, tuple))
+        and len(value) >= 2
+        and all(isinstance(component, (int, float)) for component in value[:2])
     ):
         yield value[0], value[1]
     elif isinstance(value, (list, tuple)):
@@ -126,12 +128,8 @@ def assert_collection_extent_consistency(document: dict, path: Path) -> None:
         assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid Collection bbox in {path}: {bbox}"
         dimensions = len(bbox) // 2
         minima, maxima = bbox[:dimensions], bbox[dimensions:]
-        assert all(isinstance(value, (int, float)) for value in bbox), (
-            f"Non-numeric Collection bbox in {path}: {bbox}"
-        )
-        assert all(low <= high for low, high in zip(minima, maxima)), (
-            f"Reversed Collection bbox in {path}: {bbox}"
-        )
+        assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric Collection bbox in {path}: {bbox}"
+        assert all(low <= high for low, high in zip(minima, maxima)), f"Reversed Collection bbox in {path}: {bbox}"
 
     for interval in temporal:
         assert isinstance(interval, list) and len(interval) == 2, (
