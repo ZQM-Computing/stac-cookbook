@@ -316,6 +316,7 @@ def assert_item_collection_relationships(catalog_path: Path) -> None:
                 f"field is {item.get('collection')!r}"
             )
 
+
 def assert_catalog_hierarchy(catalog_path: Path) -> None:
     """Validate local Catalog/Collection child and parent links are reciprocal."""
     documents = sorted(catalog_path.parent.rglob("*.json"))
