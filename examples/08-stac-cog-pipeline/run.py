@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
-from pystac import Catalog, Collection, Extent, Item, SpatialExtent, TemporalExtent
+from pystac import Asset, Catalog, Collection, Extent, Item, SpatialExtent, TemporalExtent
 from rasterio.shutil import copy as raster_copy
 from rasterio.transform import from_bounds
 
@@ -80,9 +80,11 @@ def main() -> None:
     )
     item.add_asset(
         "data",
-        "../../demo_cog.tif",
-        media_type="image/tiff; application=geotiff; profile=cloud-optimized",
-        roles=["data"],
+        Asset(
+            href="../../demo_cog.tif",
+            media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+            roles=["data"],
+        ),
     )
 
     # Step 3: Keep collection temporal extent timezone-aware and save normalized links.
