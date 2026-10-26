@@ -81,7 +81,7 @@ def main() -> None:
     item.add_asset(
         "data",
         Asset(
-            href="../../demo_cog.tif",
+            href="../../../demo_cog.tif",
             media_type="image/tiff; application=geotiff; profile=cloud-optimized",
             roles=["data"],
         ),
@@ -104,7 +104,7 @@ def main() -> None:
     # Step 4: Print a local serving example. The container image is deliberately not pinned
     # here; production deployments should pin a tested TiTiler image digest.
     print("\n=== Step 4: Serve with TiTiler (optional) ===")
-    print("  docker run --rm -p 8080:8080 -v \"$(pwd)/output:/data\" developmentseed/titiler:latest")
+    print('  docker run --rm -p 8080:8080 -v "$(pwd)/output:/data" developmentseed/titiler:latest')
     print("  http://localhost:8080/cog/info?url=/data/demo_cog.tif")
     print("  http://localhost:8080/cog/tiles/{z}/{x}/{y}?url=/data/demo_cog.tif")
 
