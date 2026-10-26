@@ -517,7 +517,6 @@ def test_stac_datetime_compares_instants_across_timezone_offsets():
     )
 
 
-
 def test_item_bbox_crossing_antimeridian_is_valid(tmp_path):
     """A wrapped RFC 7946 bbox should contain coordinates on both sides of 180°."""
     document = {
