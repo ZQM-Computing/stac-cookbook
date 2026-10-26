@@ -5,7 +5,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import pystac
-from pystac import Asset, Catalog, Item, MediaType
+from pystac import Asset, Catalog, Item
 
 OUTPUT = Path("output/stac_asset_integrity")
 ASSET_PATH = OUTPUT / "payload.bin"
