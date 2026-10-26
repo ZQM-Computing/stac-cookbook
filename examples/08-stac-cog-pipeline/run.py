@@ -67,7 +67,7 @@ def main() -> None:
         print(f"  Created and verified {COG_PATH} (layout={layout})")
 
     # Step 2: Create a STAC Item whose asset points to the generated local file.
-    print("\\n=== Step 2: Create STAC item ===")
+    print("\n=== Step 2: Create STAC item ===")
     item = Item(
         id="demo-cog-item",
         geometry={
@@ -86,7 +86,7 @@ def main() -> None:
     )
 
     # Step 3: Keep collection temporal extent timezone-aware and save normalized links.
-    print("\\n=== Step 3: Create STAC collection and catalog ===")
+    print("\n=== Step 3: Create STAC collection and catalog ===")
     extent = Extent(
         spatial=SpatialExtent(bboxes=[[west, south, east, north]]),
         temporal=TemporalExtent(intervals=[[datetime(2026, 1, 1, tzinfo=UTC), None]]),
@@ -101,7 +101,7 @@ def main() -> None:
 
     # Step 4: Print a local serving example. The container image is deliberately not pinned
     # here; production deployments should pin a tested TiTiler image digest.
-    print("\\n=== Step 4: Serve with TiTiler (optional) ===")
+    print("\n=== Step 4: Serve with TiTiler (optional) ===")
     print(f"  docker run --rm -p 8080:8080 -v \"$(pwd)/output:/data\" developmentseed/titiler:latest")
     print("  http://localhost:8080/cog/info?url=/data/demo_cog.tif")
     print("  http://localhost:8080/cog/tiles/{z}/{x}/{y}?url=/data/demo_cog.tif")
