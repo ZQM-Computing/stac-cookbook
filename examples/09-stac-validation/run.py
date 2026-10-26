@@ -1,5 +1,6 @@
 """Example 09: fail-closed STAC validation with PySTAC."""
 
+from copy import deepcopy
 from datetime import UTC, datetime
 
 from pystac import Item, STACObjectType
@@ -23,7 +24,7 @@ except STACError as error:
     raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
 print("Valid item: PASSED")
 
-invalid_dict = valid_item.to_dict()
+invalid_dict = deepcopy(valid_item.to_dict())
 # Keep the document identifiable as a STAC Item, but remove a required field
 # so validation rejects it for the intended schema violation.
 del invalid_dict["properties"]["datetime"]
