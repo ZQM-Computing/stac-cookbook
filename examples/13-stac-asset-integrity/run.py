@@ -30,7 +30,7 @@ item.add_asset(
     "data",
     Asset(
         href="../../payload.bin",
-        media_type=MediaType.OCTET_STREAM,
+        media_type="application/octet-stream",
         roles=["data"],
         extra_fields={"file:size": len(payload), "file:checksum": checksum},
     ),
