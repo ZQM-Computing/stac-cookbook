@@ -38,12 +38,17 @@ Earth observation engineers, satellite imagery analysts, and geospatial data eng
 pip install pystac rasterio
 ```
 
+The COG pipeline also requires a Rasterio/GDAL build with the GDAL `COG` driver. The example checks `IMAGE_STRUCTURE:LAYOUT=COG` and exits with an actionable error if that driver is unavailable; a tiled GeoTIFF is not treated as a verified COG.
+
 ## Quickstart
 
 ```bash
 # Build and validate a catalog — self-contained, synthetic data
 python examples/01-catalog-creation/run.py
 python examples/02-item-validation/run.py
+
+# Build a real local COG and a catalog with a resolving local asset href
+python examples/08-stac-cog-pipeline/run.py
 
 # Serve it as a STAC API (from the example header)
 uvicorn examples/10-stac-api-server/run:app --reload
