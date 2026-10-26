@@ -109,7 +109,13 @@ def longitude_in_bbox(longitude: float, west: float, east: float, epsilon: float
     return longitude >= west - epsilon or longitude <= east + epsilon
 
 
-def longitude_bbox_contains(outer_west: float, outer_east: float, inner_west: float, inner_east: float, epsilon: float = 1e-9) -> bool:
+def longitude_bbox_contains(
+    outer_west: float,
+    outer_east: float,
+    inner_west: float,
+    inner_east: float,
+    epsilon: float = 1e-9,
+) -> bool:
     """Check whether a longitude interval is contained in another, including wrapped intervals."""
     outer_wraps = outer_west > outer_east
     inner_wraps = inner_west > inner_east
@@ -509,7 +515,6 @@ def test_stac_datetime_compares_instants_across_timezone_offsets():
     assert parse_stac_datetime("2026-10-25T09:00:00-04:00", Path("item.json")) == parse_stac_datetime(
         "2026-10-25T13:00:00Z", Path("item.json")
     )
-
 
 
 
