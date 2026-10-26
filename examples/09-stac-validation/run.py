@@ -1,9 +1,9 @@
 """Example 09: fail-closed STAC validation with PySTAC."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pystac import Item, STACObjectType
-from pystac.errors import STACValidationError
+from pystac.errors import STACError
 from pystac.validation import validate_dict
 
 # This example uses PySTAC's bundled validator. For production workflows,
@@ -13,13 +13,13 @@ valid_item = Item(
     geometry={"type": "Point", "coordinates": [-80.93, 29.02]},
     # A Point can legitimately have a zero-area bbox.
     bbox=[-80.93, 29.02, -80.93, 29.02],
-    datetime=datetime(2026, 1, 15, tzinfo=timezone.utc),
+    datetime=datetime(2026, 1, 15, tzinfo=UTC),
     properties={"platform": "demo"},
 )
 
 try:
     validate_dict(valid_item.to_dict(), STACObjectType.ITEM)
-except STACValidationError as error:
+except STACError as error:
     raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
 print("Valid item: PASSED")
 
