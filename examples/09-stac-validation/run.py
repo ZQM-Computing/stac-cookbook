@@ -4,7 +4,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 
 from pystac import Item, STACObjectType
-from pystac.errors import STACError
+from pystac.errors import STACError, STACValidationError
 from pystac.validation import validate_dict
 
 # This example uses PySTAC's bundled validator. For production workflows,
@@ -20,7 +20,7 @@ valid_item = Item(
 
 try:
     validate_dict(valid_item.to_dict(), STACObjectType.ITEM)
-except STACError as error:
+except (STACError, STACValidationError) as error:
     raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
 print("Valid item: PASSED")
 
