@@ -23,13 +23,10 @@ except STACError as error:
     raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
 print("Valid item: PASSED")
 
-invalid_dict = {
-    "type": "Feature",
-    "id": "invalid-item",
-    "geometry": {"type": "Point", "coordinates": [-80.93, 29.02]},
-    "bbox": [-80.93, 29.02, -80.93, 29.02],
-    # Intentionally missing required STAC Item properties, including datetime.
-}
+invalid_dict = valid_item.to_dict()
+# Keep the document identifiable as a STAC Item, but remove a required field
+# so validation rejects it for the intended schema violation.
+del invalid_dict["properties"]["datetime"]
 
 try:
     validate_dict(invalid_dict, STACObjectType.ITEM)
@@ -63,11 +60,7 @@ if geometry_type not in supported_geojson_types:
 print("Geometry type: OK")
 
 datetime_value = item_dict["properties"]["datetime"]
-if (
-    not isinstance(datetime_value, str)
-    or "T" not in datetime_value
-    or not datetime_value.endswith("Z")
-):
+if not isinstance(datetime_value, str) or "T" not in datetime_value or not datetime_value.endswith("Z"):
     raise SystemExit(f"Expected an explicit UTC timestamp, got: {datetime_value!r}")
 print("Datetime format: OK")
 
