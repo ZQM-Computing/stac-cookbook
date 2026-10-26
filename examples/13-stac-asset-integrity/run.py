@@ -29,7 +29,7 @@ item = Item(
 item.add_asset(
     "data",
     Asset(
-        href="../../../payload.bin",
+        href="../../payload.bin",
         media_type=MediaType.OCTET_STREAM,
         roles=["data"],
         extra_fields={"file:size": len(payload), "file:checksum": checksum},
