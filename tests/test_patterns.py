@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-from pystac import STACObjectType
+from pystac import Asset, Catalog, Item, STACObjectType
 from pystac.validation import validate_dict
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -205,10 +205,11 @@ def assert_collection_extent_consistency(document: dict, path: Path) -> None:
 
 
 def assert_local_references_resolve(catalog_path: Path) -> None:
-    """Validate local STAC links and asset hrefs without making network requests."""
-    root = catalog_path.parent
-    documents = sorted(root.rglob("*.json"))
-    assert documents, f"No JSON documents found under STAC output: {root}"
+    """Validate local STAC references stay inside the generated output root."""
+    catalog_root = catalog_path.parent
+    allowed_root = catalog_root.parent.resolve()
+    documents = sorted(catalog_root.rglob("*.json"))
+    assert documents, f"No JSON documents found under STAC output: {catalog_root}"
 
     for document_path in documents:
         document = json.loads(document_path.read_text(encoding="utf-8"))
@@ -231,11 +232,14 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             if parsed.scheme in ("http", "https"):
                 continue
             if parsed.scheme == "file":
-                target = Path(unquote(parsed.path))
+                target = Path(unquote(parsed.path)).resolve()
             elif parsed.scheme:
                 continue
             else:
                 target = (document_path.parent / unquote(parsed.path)).resolve()
+            assert target.is_relative_to(allowed_root), (
+                f"Local STAC link escapes generated output root in {document_path}: {href}"
+            )
             assert target.is_file(), f"Broken local STAC link rel={link.get('rel')!r} in {document_path}: {href}"
 
         for asset_key, asset in document.get("assets", {}).items():
@@ -250,6 +254,9 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
                 continue
             else:
                 target = (document_path.parent / unquote(parsed.path)).resolve()
+            assert target.is_relative_to(allowed_root), (
+                f"Local STAC asset escapes generated output root in {document_path}: {href}"
+            )
             assert target.is_file(), f"Broken local asset href for {asset_key!r} in {document_path}: {href}"
 
 
@@ -519,6 +526,38 @@ def test_stac_datetime_compares_instants_across_timezone_offsets():
     assert parse_stac_datetime("2026-10-25T09:00:00-04:00", Path("item.json")) == parse_stac_datetime(
         "2026-10-25T13:00:00Z", Path("item.json")
     )
+
+
+def test_local_asset_reference_cannot_escape_generated_output_root(tmp_path):
+    """A local file URI outside the generated output tree must fail closed."""
+    output_root = tmp_path / "output"
+    catalog_dir = output_root / "catalog"
+    catalog_dir.mkdir(parents=True)
+    outside_asset = tmp_path / "outside.bin"
+    outside_asset.write_bytes(b"not part of the generated output")
+
+    item = Item(
+        id="external-local-file",
+        geometry={"type": "Point", "coordinates": [-80.9, 29.0]},
+        bbox=[-80.9, 29.0, -80.9, 29.0],
+        datetime=datetime.fromisoformat("2026-01-15T00:00:00+00:00"),
+        properties={},
+    )
+    item.add_asset(
+        "data",
+        Asset(href=outside_asset.as_uri(), media_type="application/octet-stream", roles=["data"]),
+    )
+    catalog = Catalog(id="root", description="synthetic path containment test")
+    catalog.add_item(item)
+    catalog.normalize_and_save(str(catalog_dir))
+    catalog_path = catalog_dir / "catalog.json"
+
+    try:
+        assert_local_references_resolve(catalog_path)
+    except AssertionError as error:
+        assert "escapes generated output root" in str(error)
+    else:
+        raise AssertionError("External file URI unexpectedly passed local asset validation")
 
 
 def test_item_bbox_crossing_antimeridian_is_valid(tmp_path):
