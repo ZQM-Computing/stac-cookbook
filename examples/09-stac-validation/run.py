@@ -1,8 +1,8 @@
 """Example 09: fail-closed STAC validation with PySTAC."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pystac import Item
+from pystac import Item, STACObjectType
 from pystac.errors import STACValidationError
 from pystac.validation import validate_dict
 
@@ -13,12 +13,12 @@ valid_item = Item(
     geometry={"type": "Point", "coordinates": [-80.93, 29.02]},
     # A Point can legitimately have a zero-area bbox.
     bbox=[-80.93, 29.02, -80.93, 29.02],
-    datetime=datetime(2026, 1, 15),
+    datetime=datetime(2026, 1, 15, tzinfo=timezone.utc),
     properties={"platform": "demo"},
 )
 
 try:
-    validate_dict(valid_item.to_dict(), "Item")
+    validate_dict(valid_item.to_dict(), STACObjectType.ITEM)
 except STACValidationError as error:
     raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
 print("Valid item: PASSED")
@@ -32,7 +32,7 @@ invalid_dict = {
 }
 
 try:
-    validate_dict(invalid_dict, "Item")
+    validate_dict(invalid_dict, STACObjectType.ITEM)
 except STACValidationError as error:
     print(f"Invalid item: REJECTED as expected ({type(error).__name__})")
 else:
@@ -63,7 +63,11 @@ if geometry_type not in supported_geojson_types:
 print("Geometry type: OK")
 
 datetime_value = item_dict["properties"]["datetime"]
-if not isinstance(datetime_value, str) or "T" not in datetime_value or not datetime_value.endswith("Z"):
+if (
+    not isinstance(datetime_value, str)
+    or "T" not in datetime_value
+    or not datetime_value.endswith("Z")
+):
     raise SystemExit(f"Expected an explicit UTC timestamp, got: {datetime_value!r}")
 print("Datetime format: OK")
 
