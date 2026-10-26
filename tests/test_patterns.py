@@ -552,7 +552,6 @@ def test_item_outside_collection_temporal_extent_is_rejected(tmp_path):
         raise AssertionError("Item outside Collection temporal extent unexpectedly passed validation")
 
 
-
 def test_stac_validation_example_fails_closed_and_reports_both_cases(tmp_path):
     """The dedicated validation example must reject invalid data and exit successfully."""
     env = os.environ.copy()
