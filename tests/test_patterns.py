@@ -209,7 +209,7 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
     catalog_root = catalog_path.parent
     allowed_root = catalog_root.parent.resolve()
     documents = sorted(catalog_root.rglob("*.json"))
-    assert documents, f"No JSON documents found under STAC output: {root}"
+    assert documents, f"No JSON documents found under STAC output: {catalog_root}"
 
     for document_path in documents:
         document = json.loads(document_path.read_text(encoding="utf-8"))
@@ -232,7 +232,7 @@ def assert_local_references_resolve(catalog_path: Path) -> None:
             if parsed.scheme in ("http", "https"):
                 continue
             if parsed.scheme == "file":
-                target = Path(unquote(parsed.path))
+                target = Path(unquote(parsed.path)).resolve()
             elif parsed.scheme:
                 continue
             else:
