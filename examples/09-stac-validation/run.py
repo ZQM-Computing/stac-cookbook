@@ -1,4 +1,4 @@
-"""Example 09: STAC validation with JSON Schema."""
+"""Example 09: fail-closed STAC validation with PySTAC."""
 
 from datetime import datetime
 
@@ -6,63 +6,71 @@ from pystac import Item
 from pystac.errors import STACValidationError
 from pystac.validation import validate_dict
 
-# Load STAC JSON Schema
-# In production, download from https://github.com/radiantearth/stac-spec
-# For demo, we use pystac's built-in validation
-
-# Create a valid item
+# This example uses PySTAC's bundled validator. For production workflows,
+# pin the PySTAC/STAC versions and validate against the intended extensions too.
 valid_item = Item(
     id="valid-item",
     geometry={"type": "Point", "coordinates": [-80.93, 29.02]},
+    # A Point can legitimately have a zero-area bbox.
     bbox=[-80.93, 29.02, -80.93, 29.02],
     datetime=datetime(2026, 1, 15),
     properties={"platform": "demo"},
 )
 
-# Validate
 try:
     validate_dict(valid_item.to_dict(), "Item")
-    print("Valid item: PASSED")
-except STACValidationError as e:
-    print(f"Valid item: FAILED - {e}")
+except STACValidationError as error:
+    raise SystemExit(f"Valid item unexpectedly failed validation: {error}") from error
+print("Valid item: PASSED")
 
-# Create an invalid item (missing required field)
 invalid_dict = {
     "type": "Feature",
     "id": "invalid-item",
     "geometry": {"type": "Point", "coordinates": [-80.93, 29.02]},
     "bbox": [-80.93, 29.02, -80.93, 29.02],
-    # Missing 'datetime' and 'properties'
+    # Intentionally missing required STAC Item properties, including datetime.
 }
 
 try:
     validate_dict(invalid_dict, "Item")
-    print("Invalid item: PASSED (unexpected)")
-except STACValidationError as e:
-    print(f"Invalid item: FAILED (expected) - {type(e).__name__}")
+except STACValidationError as error:
+    print(f"Invalid item: REJECTED as expected ({type(error).__name__})")
+else:
+    raise SystemExit("Invalid item unexpectedly passed validation")
 
-# Custom validation rules
-print("\n=== Custom validation ===")
+print("\n=== Additional local sanity checks ===")
 item_dict = valid_item.to_dict()
+required = ("id", "geometry", "bbox", "properties")
+missing = [field for field in required if field not in item_dict]
+if missing:
+    raise SystemExit(f"Valid item is missing required fields: {missing}")
+if "datetime" not in item_dict["properties"]:
+    raise SystemExit("Valid item is missing properties.datetime")
+print("Required fields: OK")
 
-# Check required fields
-required = ["id", "geometry", "bbox", "datetime", "properties"]
-for field in required:
-    assert field in item_dict, f"Missing: {field}"
-print("  Required fields: OK")
+geometry_type = item_dict["geometry"].get("type")
+supported_geojson_types = {
+    "Point",
+    "MultiPoint",
+    "LineString",
+    "MultiLineString",
+    "Polygon",
+    "MultiPolygon",
+    "GeometryCollection",
+}
+if geometry_type not in supported_geojson_types:
+    raise SystemExit(f"Unsupported GeoJSON geometry type: {geometry_type!r}")
+print("Geometry type: OK")
 
-# Check geometry type
-assert item_dict["geometry"]["type"] in ["Point", "Polygon", "MultiPolygon"]
-print("  Geometry type: OK")
+datetime_value = item_dict["properties"]["datetime"]
+if not isinstance(datetime_value, str) or "T" not in datetime_value or not datetime_value.endswith("Z"):
+    raise SystemExit(f"Expected an explicit UTC timestamp, got: {datetime_value!r}")
+print("Datetime format: OK")
 
-# Check datetime format
-datetime_str = item_dict["datetime"]
-assert "T" in datetime_str and "Z" in datetime_str
-print("  Datetime format: OK")
-
-# Check bbox validity
 bbox = item_dict["bbox"]
-assert len(bbox) == 4
-assert bbox[0] < bbox[2]  # west < east
-assert bbox[1] < bbox[3]  # south < north
-print("  BBox validity: OK")
+if len(bbox) not in (4, 6) or not all(isinstance(value, (int, float)) for value in bbox):
+    raise SystemExit(f"Invalid bbox shape or values: {bbox!r}")
+dimensions = len(bbox) // 2
+if any(low > high for low, high in zip(bbox[:dimensions], bbox[dimensions:])):
+    raise SystemExit(f"Reversed bbox bounds: {bbox!r}")
+print("BBox validity: OK")
