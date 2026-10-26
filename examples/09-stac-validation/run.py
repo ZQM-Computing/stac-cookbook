@@ -31,7 +31,7 @@ del invalid_dict["properties"]["datetime"]
 
 try:
     validate_dict(invalid_dict, STACObjectType.ITEM)
-except STACError as error:
+except (STACError, STACValidationError) as error:
     print(f"Invalid item: REJECTED as expected ({type(error).__name__})")
 else:
     raise SystemExit("Invalid item unexpectedly passed validation")
