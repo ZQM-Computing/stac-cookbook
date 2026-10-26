@@ -3,11 +3,13 @@
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pystac
 from pystac import Asset, Catalog, Item
 
 OUTPUT = Path("output/stac_asset_integrity")
+FILE_EXTENSION = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
 ASSET_PATH = OUTPUT / "payload.bin"
 CATALOG_PATH = OUTPUT / "catalog"
 
@@ -25,6 +27,7 @@ item = Item(
     bbox=[-80.93, 29.02, -80.93, 29.02],
     datetime=datetime(2026, 1, 15, tzinfo=UTC),
     properties={"platform": "synthetic"},
+    stac_extensions=[FILE_EXTENSION],
 )
 item.add_asset(
     "data",
@@ -47,9 +50,26 @@ if not saved_item.is_file():
     raise SystemExit(f"Expected saved STAC Item was not created: {saved_item}")
 saved = pystac.Item.from_file(str(saved_item))
 asset = saved.assets["data"]
-asset_path = (saved_item.parent / asset.href).resolve()
+href = asset.href
+parsed_href = urlparse(href)
+if parsed_href.scheme or parsed_href.netloc or Path(href).is_absolute() or "\\" in href:
+    raise SystemExit(f"Expected a relative local asset href, got: {href!r}")
+
+asset_candidate = saved_item.parent / href
+# Reject symlink components and any resolved path that escapes this example's
+# output root before reading bytes. This pattern is intentionally local-only.
+for component in (asset_candidate, *asset_candidate.parents):
+    if component == OUTPUT.parent:
+        break
+    if component.is_symlink():
+        raise SystemExit(f"Symlinks are not allowed in local asset paths: {component}")
+try:
+    asset_path = asset_candidate.resolve(strict=True)
+    asset_path.relative_to(OUTPUT.resolve())
+except (OSError, ValueError) as error:
+    raise SystemExit(f"Local asset escapes the output root or is missing: {href}") from error
 if not asset_path.is_file():
-    raise SystemExit(f"Local asset does not resolve: {asset.href}")
+    raise SystemExit(f"Local asset does not resolve to a regular file: {href}")
 actual = asset_path.read_bytes()
 if asset.extra_fields.get("file:size") != len(actual):
     raise SystemExit("STAC file:size does not match local asset bytes")

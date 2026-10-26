@@ -71,6 +71,16 @@ def test_exact_example_inventory():
         assert script.stat().st_size > 0, f"Example entry point is empty: {script}"
 
 
+def test_asset_integrity_example_declares_file_extension_and_confines_local_paths():
+    source_path = EXAMPLES_DIR / "13-stac-asset-integrity" / "run.py"
+    source = source_path.read_text(encoding="utf-8")
+    assert "stac_extensions=[FILE_EXTENSION]" in source
+    assert "https://stac-extensions.github.io/file/v2.1.0/schema.json" in source
+    assert "parsed_href.scheme or parsed_href.netloc" in source
+    assert "asset_path.relative_to(OUTPUT.resolve())" in source
+    assert "Symlinks are not allowed in local asset paths" in source
+
+
 def test_all_examples_have_valid_python_syntax():
     """Compile source in memory to avoid leaving __pycache__ files in the checkout."""
     scripts = sorted(EXAMPLES_DIR.glob("*/run.py"))
