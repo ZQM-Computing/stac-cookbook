@@ -527,6 +527,7 @@ def test_stac_datetime_compares_instants_across_timezone_offsets():
         "2026-10-25T13:00:00Z", Path("item.json")
     )
 
+
 def test_local_asset_reference_cannot_escape_generated_output_root(tmp_path):
     """A local file URI outside the generated output tree must fail closed."""
     output_root = tmp_path / "output"
