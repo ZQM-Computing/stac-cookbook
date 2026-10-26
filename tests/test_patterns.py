@@ -452,7 +452,7 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
                 item = json.loads(item_path.read_text(encoding="utf-8"))
                 asset = item["assets"]["data"]
                 assert asset["href"] == "../../../demo_cog.tif"
-                assert asset["media_type"] == "image/tiff; application=geotiff; profile=cloud-optimized"
+                assert asset["type"] == "image/tiff; application=geotiff; profile=cloud-optimized"
                 assert "data" in asset.get("roles", [])
                 assert (item_path.parent / asset["href"]).resolve().is_file()
                 assert item["properties"]["datetime"].endswith("Z")
