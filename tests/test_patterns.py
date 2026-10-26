@@ -32,6 +32,7 @@ OFFLINE_STAC_EXAMPLES = (
     "02-item-validation",
     "05-cloud-deployment",
     "06-full-workflow",
+    "08-stac-cog-pipeline",
     "11-bulk-operations",
     "12-stac-games",
 )
@@ -40,6 +41,7 @@ EXPECTED_OUTPUT_MARKERS = {
     "02-item-validation": ("Item is valid STAC", "All required fields present"),
     "05-cloud-deployment": ("Catalog prepared for cloud deployment", "Catalog path: output/cloud_catalog"),
     "06-full-workflow": ("Catalog saved with 3 items", "Output: output/full_workflow"),
+    "08-stac-cog-pipeline": ("Created and verified output/demo_cog.tif (layout=COG)", "Catalog saved: zqm-cog-catalog"),
     "11-bulk-operations": ("Created 100 items", "Total items: 100"),
     "12-stac-games": ("Game locations: 6", "Content packs: 3"),
 }
@@ -47,6 +49,7 @@ EXPECTED_CATALOGS = {
     "01-catalog-creation": ("catalog", "zqm-demo-catalog"),
     "05-cloud-deployment": ("cloud_catalog", "zqm-cloud-catalog"),
     "06-full-workflow": ("full_workflow", "zqm-full-workflow"),
+    "08-stac-cog-pipeline": ("stac_catalog", "zqm-cog-catalog"),
     "11-bulk-operations": ("bulk_catalog", "bulk-catalog"),
     "12-stac-games": ("game_catalog", "zqm-labs-game-assets"),
 }
@@ -435,6 +438,27 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             assert_local_references_resolve(catalog_path)
             assert_item_collection_relationships(catalog_path)
             assert_catalog_hierarchy(catalog_path)
+            if name == "08-stac-cog-pipeline":
+                import rasterio
+
+                item_path = (
+                    tmp_path
+                    / "output"
+                    / "stac_catalog"
+                    / "demo-cog-collection"
+                    / "demo-cog-item"
+                    / "demo-cog-item.json"
+                )
+                item = json.loads(item_path.read_text(encoding="utf-8"))
+                asset = item["assets"]["data"]
+                assert asset["href"] == "../../../demo_cog.tif"
+                assert asset["type"] == "image/tiff; application=geotiff; profile=cloud-optimized"
+                assert "data" in asset.get("roles", [])
+                assert (item_path.parent / asset["href"]).resolve().is_file()
+                assert item["properties"]["datetime"].endswith("Z")
+                with rasterio.open(tmp_path / "output" / "demo_cog.tif") as dataset:
+                    assert dataset.tags(ns="IMAGE_STRUCTURE").get("LAYOUT") == "COG"
+                    assert dataset.width == 256 and dataset.height == 256 and dataset.count == 1
 
 
 def test_stac_datetime_rejects_malformed_and_timezone_naive_values():
