@@ -102,6 +102,34 @@ def parse_stac_datetime(value: str, path: Path) -> datetime:
     return parsed
 
 
+def longitude_in_bbox(longitude: float, west: float, east: float, epsilon: float = 1e-9) -> bool:
+    """Test longitude membership in a normal or antimeridian-crossing interval."""
+    if west <= east:
+        return west - epsilon <= longitude <= east + epsilon
+    return longitude >= west - epsilon or longitude <= east + epsilon
+
+
+def longitude_bbox_contains(outer_west: float, outer_east: float, inner_west: float, inner_east: float, epsilon: float = 1e-9) -> bool:
+    """Check whether a longitude interval is contained in another, including wrapped intervals."""
+    outer_wraps = outer_west > outer_east
+    inner_wraps = inner_west > inner_east
+    if not outer_wraps:
+        return not inner_wraps and outer_west <= inner_west + epsilon and inner_east <= outer_east + epsilon
+    if inner_wraps:
+        return inner_west >= outer_west - epsilon and inner_east <= outer_east + epsilon
+    return inner_west >= outer_west - epsilon or inner_east <= outer_east + epsilon
+
+
+def bbox_dimensions_are_valid(bbox: list, path: Path) -> None:
+    """Validate bbox numeric dimensions while allowing RFC 7946 longitude wrap."""
+    dimensions = len(bbox) // 2
+    minima, maxima = bbox[:dimensions], bbox[dimensions:]
+    for index, (low, high) in enumerate(zip(minima, maxima)):
+        if index == 0 and low > high:
+            continue
+        assert low <= high, f"Reversed STAC bbox in {path}: {bbox}"
+
+
 def assert_item_spatiotemporal_consistency(document: dict, path: Path) -> None:
     """Check STAC Item geometry, bbox, and temporal metadata agree."""
     geometry = document.get("geometry")
@@ -110,13 +138,12 @@ def assert_item_spatiotemporal_consistency(document: dict, path: Path) -> None:
     assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid STAC Item bbox in {path}: {bbox}"
     assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric STAC Item bbox in {path}: {bbox}"
     dimensions = len(bbox) // 2
-    minima, maxima = bbox[:dimensions], bbox[dimensions:]
-    assert all(low <= high for low, high in zip(minima, maxima)), f"Reversed STAC Item bbox in {path}: {bbox}"
+    bbox_dimensions_are_valid(bbox, path)
 
     coordinates = list(_coordinate_pairs(geometry.get("coordinates")))
     assert coordinates, f"Geometry has no coordinate pairs in {path}"
     for longitude, latitude in coordinates:
-        assert bbox[0] - 1e-9 <= longitude <= bbox[dimensions] + 1e-9, (
+        assert longitude_in_bbox(longitude, bbox[0], bbox[dimensions]), (
             f"Longitude {longitude} falls outside Item bbox {bbox} in {path}"
         )
         assert bbox[1] - 1e-9 <= latitude <= bbox[dimensions + 1] + 1e-9, (
@@ -153,9 +180,8 @@ def assert_collection_extent_consistency(document: dict, path: Path) -> None:
     for bbox in spatial:
         assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid Collection bbox in {path}: {bbox}"
         dimensions = len(bbox) // 2
-        minima, maxima = bbox[:dimensions], bbox[dimensions:]
         assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric Collection bbox in {path}: {bbox}"
-        assert all(low <= high for low, high in zip(minima, maxima)), f"Reversed Collection bbox in {path}: {bbox}"
+        bbox_dimensions_are_valid(bbox, path)
 
     for interval in temporal:
         assert isinstance(interval, list) and len(interval) == 2, (
@@ -223,18 +249,23 @@ def assert_item_within_collection_extent(item: dict, collection: dict, path: Pat
     item_bbox = item.get("bbox")
     spatial_extents = collection.get("extent", {}).get("spatial", {}).get("bbox", [])
     if isinstance(item_bbox, list) and spatial_extents:
-        item_dimensions = len(item_bbox) // 2
-        item_minima, item_maxima = item_bbox[:item_dimensions], item_bbox[item_dimensions:]
         assert len(item_bbox) in (4, 6), f"Invalid Item bbox in {path}: {item_bbox}"
-        assert any(
-            len(extent) in (4, 6)
-            and all(
-                extent[index] <= item_minima[index] + 1e-9
-                and item_maxima[index] <= extent[index + len(extent) // 2] + 1e-9
-                for index in range(2)
-            )
-            for extent in spatial_extents
-        ), f"Item {item.get('id')!r} bbox {item_bbox} falls outside Collection spatial extent in {path}"
+
+        def contains(outer: list, inner: list) -> bool:
+            if len(outer) not in (4, 6) or len(inner) != len(outer):
+                return False
+            dimensions = len(outer) // 2
+            if not longitude_bbox_contains(outer[0], outer[dimensions], inner[0], inner[dimensions]):
+                return False
+            if not (outer[1] <= inner[1] + 1e-9 and inner[dimensions + 1] <= outer[dimensions + 1] + 1e-9):
+                return False
+            if dimensions == 3:
+                return outer[2] <= inner[2] + 1e-9 and inner[5] <= outer[5] + 1e-9
+            return True
+
+        assert any(contains(extent, item_bbox) for extent in spatial_extents), (
+            f"Item {item.get('id')!r} bbox {item_bbox} falls outside Collection spatial extent in {path}"
+        )
 
     def parse_datetime(value: str | None) -> datetime | None:
         return parse_stac_datetime(value, path) if value is not None else None
@@ -479,6 +510,36 @@ def test_stac_datetime_compares_instants_across_timezone_offsets():
     assert parse_stac_datetime("2026-10-25T09:00:00-04:00", Path("item.json")) == parse_stac_datetime(
         "2026-10-25T13:00:00Z", Path("item.json")
     )
+
+
+
+
+def test_item_bbox_crossing_antimeridian_is_valid(tmp_path):
+    """A wrapped RFC 7946 bbox should contain coordinates on both sides of 180°."""
+    document = {
+        "type": "Feature",
+        "id": "dateline-item",
+        "geometry": {"type": "MultiPoint", "coordinates": [[179.5, 10.0], [-179.5, 10.5]]},
+        "bbox": [179.0, 9.0, -179.0, 11.0],
+        "properties": {"datetime": "2026-10-25T13:00:00Z"},
+    }
+    assert_item_spatiotemporal_consistency(document, tmp_path / "dateline-item.json")
+
+
+def test_antimeridian_item_fits_wrapped_collection_extent(tmp_path):
+    """A wrapped Item bbox inside a wider wrapped Collection extent is accepted."""
+    item = {
+        "id": "dateline-item",
+        "bbox": [179.0, 9.0, -179.0, 11.0],
+        "properties": {"datetime": "2026-10-25T13:00:00Z"},
+    }
+    collection = {
+        "extent": {
+            "spatial": {"bbox": [[170.0, 0.0, -170.0, 20.0]]},
+            "temporal": {"interval": [["2026-01-01T00:00:00Z", "2026-12-31T23:59:59Z"]]},
+        }
+    }
+    assert_item_within_collection_extent(item, collection, tmp_path / "dateline-item.json")
 
 
 def test_item_outside_collection_spatial_extent_is_rejected(tmp_path):
