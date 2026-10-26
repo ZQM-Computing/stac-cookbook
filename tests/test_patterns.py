@@ -441,7 +441,14 @@ def test_offline_stac_examples_run_end_to_end(tmp_path):
             if name == "08-stac-cog-pipeline":
                 import rasterio
 
-                item_path = tmp_path / "output" / "stac_catalog" / "demo-cog-collection" / "demo-cog-item" / "demo-cog-item.json"
+                item_path = (
+                    tmp_path
+                    / "output"
+                    / "stac_catalog"
+                    / "demo-cog-collection"
+                    / "demo-cog-item"
+                    / "demo-cog-item.json"
+                )
                 item = json.loads(item_path.read_text(encoding="utf-8"))
                 asset = item["assets"]["data"]
                 assert asset["href"] == "../../../demo_cog.tif"
