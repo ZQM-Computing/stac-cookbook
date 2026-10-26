@@ -550,3 +550,27 @@ def test_item_outside_collection_temporal_extent_is_rejected(tmp_path):
         assert "falls outside Collection temporal extent" in str(error)
     else:
         raise AssertionError("Item outside Collection temporal extent unexpectedly passed validation")
+
+
+
+def test_stac_validation_example_fails_closed_and_reports_both_cases(tmp_path):
+    """The dedicated validation example must reject invalid data and exit successfully."""
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    result = subprocess.run(
+        [sys.executable, str(EXAMPLES_DIR / "09-stac-validation" / "run.py")],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"STAC validation example failed with exit code {result.returncode}.\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    assert "Valid item: PASSED" in result.stdout
+    assert "Invalid item: REJECTED as expected" in result.stdout
+    assert "Datetime format: OK" in result.stdout
+    assert "BBox validity: OK" in result.stdout
