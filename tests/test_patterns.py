@@ -70,6 +70,7 @@ def test_exact_example_inventory():
     for script in scripts:
         assert script.stat().st_size > 0, f"Example entry point is empty: {script}"
 
+
 def test_asset_integrity_example_declares_file_extension_and_confines_local_paths():
     source_path = EXAMPLES_DIR / "13-stac-asset-integrity" / "run.py"
     source = source_path.read_text(encoding="utf-8")
