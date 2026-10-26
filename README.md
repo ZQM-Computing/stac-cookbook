@@ -46,6 +46,7 @@ The COG pipeline also requires a Rasterio/GDAL build with the GDAL `COG` driver.
 # Build and validate a catalog — self-contained, synthetic data
 python examples/01-catalog-creation/run.py
 python examples/02-item-validation/run.py
+python examples/13-stac-asset-integrity/run.py
 
 # Build a real local COG and a catalog with a resolving local asset href
 python examples/08-stac-cog-pipeline/run.py
@@ -78,6 +79,7 @@ package to install.
 | 10 | `10-stac-api-server` | Full STAC API server with FastAPI (`uvicorn ... --reload`) |
 | 11 | `11-bulk-operations` | Bulk create, update, and export of items |
 | 12 | `12-stac-games` | Cataloging non-EO assets with STAC (worked example: game assets) |
+| 13 | `13-stac-asset-integrity` | Verify local asset href resolution, `file:size`, and SHA-256 multihash metadata offline |
 
 ## Repository layout
 
@@ -85,7 +87,7 @@ package to install.
 stac-cookbook/
 ├── examples/
 │   ├── 01-catalog-creation/run.py
-│   └── ... (one run.py per pattern, 12 total)
+│   └── ... (one run.py per pattern, 13 total)
 ├── tests/
 │   └── test_patterns.py     # exact inventory, syntax checks, and offline runtime tests
 ├── pyproject.toml
