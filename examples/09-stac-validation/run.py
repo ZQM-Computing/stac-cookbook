@@ -33,7 +33,7 @@ invalid_dict = {
 
 try:
     validate_dict(invalid_dict, STACObjectType.ITEM)
-except STACValidationError as error:
+except STACError as error:
     print(f"Invalid item: REJECTED as expected ({type(error).__name__})")
 else:
     raise SystemExit("Invalid item unexpectedly passed validation")
