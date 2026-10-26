@@ -26,6 +26,7 @@ EXPECTED_EXAMPLES = {
     "10-stac-api-server",
     "11-bulk-operations",
     "12-stac-games",
+    "13-stac-asset-integrity",
 }
 OFFLINE_STAC_EXAMPLES = (
     "01-catalog-creation",
@@ -35,6 +36,7 @@ OFFLINE_STAC_EXAMPLES = (
     "08-stac-cog-pipeline",
     "11-bulk-operations",
     "12-stac-games",
+    "13-stac-asset-integrity",
 )
 EXPECTED_OUTPUT_MARKERS = {
     "01-catalog-creation": ("Catalog saved: zqm-demo-catalog", "Item: demo-item-1"),
@@ -44,6 +46,7 @@ EXPECTED_OUTPUT_MARKERS = {
     "08-stac-cog-pipeline": ("Created and verified output/demo_cog.tif (layout=COG)", "Catalog saved: zqm-cog-catalog"),
     "11-bulk-operations": ("Created 100 items", "Total items: 100"),
     "12-stac-games": ("Game locations: 6", "Content packs: 3"),
+    "13-stac-asset-integrity": ("Asset size: VERIFIED", "Asset SHA-256 multihash: VERIFIED"),
 }
 EXPECTED_CATALOGS = {
     "01-catalog-creation": ("catalog", "zqm-demo-catalog"),
@@ -52,11 +55,12 @@ EXPECTED_CATALOGS = {
     "08-stac-cog-pipeline": ("stac_catalog", "zqm-cog-catalog"),
     "11-bulk-operations": ("bulk_catalog", "bulk-catalog"),
     "12-stac-games": ("game_catalog", "zqm-labs-game-assets"),
+    "13-stac-asset-integrity": ("stac_asset_integrity/catalog", "zqm-asset-integrity"),
 }
 
 
 def test_exact_example_inventory():
-    """README's 12-example promise cannot silently regress to a partial tree."""
+    """README's 13-example promise cannot silently regress to a partial tree."""
     scripts = sorted(EXAMPLES_DIR.glob("*/run.py"))
     actual = {path.parent.name for path in scripts}
     assert actual == EXPECTED_EXAMPLES, (
