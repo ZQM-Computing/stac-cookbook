@@ -179,7 +179,6 @@ def assert_collection_extent_consistency(document: dict, path: Path) -> None:
 
     for bbox in spatial:
         assert isinstance(bbox, list) and len(bbox) in (4, 6), f"Invalid Collection bbox in {path}: {bbox}"
-        dimensions = len(bbox) // 2
         assert all(isinstance(value, (int, float)) for value in bbox), f"Non-numeric Collection bbox in {path}: {bbox}"
         bbox_dimensions_are_valid(bbox, path)
 
