@@ -41,7 +41,7 @@ jobs:
           path: site
 
   deploy:
-    timeout-minutes: 10
+    timeout-minutes: 30
     name: Deploy GitHub Pages (opt-in)
     if: github.event_name != 'pull_request' && vars.ENABLE_GITHUB_PAGES == 'true'
     needs: build
